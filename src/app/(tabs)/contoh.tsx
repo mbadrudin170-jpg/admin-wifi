@@ -7,10 +7,12 @@ import type { WifiNetwork } from '../../../modules/my-module/src/MyModule.types'
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 enum Tampilan {
-  Wifi = 'Wifi',
-  Perangkat = 'Perangkat',
+  wifi = 'Wifi',
+  perangkat = 'Perangkat',
 }
 
 export default function ContohScreen() {
@@ -18,7 +20,8 @@ export default function ContohScreen() {
   const [status, setStatus] = useState<string>('Belum dipindai');
   const [scanning, setScanning] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [tampilan, setTampilan] = useState<Tampilan>(Tampilan.Wifi);
+  const [tampilan, setTampilan] = useState<Tampilan>(Tampilan.wifi);
+  const theme = useTheme();
 
   useEffect(() => {
     const subscription = MyModule.addListener('onScanResults', (event: any) => {
@@ -74,15 +77,74 @@ export default function ContohScreen() {
   }, []);
 
   return (
-    <ThemedView style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <ThemedView style={styles.card}>
         <ThemedText type="title" style={styles.title}>
           Daftar Wi-Fi
         </ThemedText>
 
-        <ThemedView>
-          <Pressable onPress={() => setTampilan(Tampilan.Perangkat)}>
-            <ThemedText>{Tampilan.Perangkat}</ThemedText>
+        <ThemedView
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            alignSelf: 'stretch',
+            width: '100%',
+          }}
+        >
+          <Pressable
+            onPress={() => setTampilan(Tampilan.wifi)}
+            style={{
+              flex: 1,
+              paddingHorizontal: Spacing.three,
+              paddingVertical: Spacing.two,
+              borderRadius: Spacing.two,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor:
+                tampilan === Tampilan.wifi
+                  ? theme.backgroundSelected
+                  : 'transparent',
+            }}
+          >
+            <ThemedText
+              style={{
+                color:
+                  tampilan === Tampilan.wifi ? theme.text : theme.textSecondary,
+                fontWeight: tampilan === Tampilan.wifi ? '600' : '400',
+                textAlign: 'center',
+              }}
+            >
+              {Tampilan.wifi}
+            </ThemedText>
+          </Pressable>
+          <Pressable
+            onPress={() => setTampilan(Tampilan.perangkat)}
+            style={{
+              flex: 1,
+              paddingHorizontal: Spacing.three,
+              paddingVertical: Spacing.two,
+              borderRadius: Spacing.two,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor:
+                tampilan === Tampilan.perangkat
+                  ? theme.backgroundSelected
+                  : 'transparent',
+            }}
+          >
+            <ThemedText
+              style={{
+                color:
+                  tampilan === Tampilan.perangkat
+                    ? theme.text
+                    : theme.textSecondary,
+                fontWeight: tampilan === Tampilan.perangkat ? '600' : '400',
+                textAlign: 'center',
+              }}
+            >
+              {Tampilan.perangkat}
+            </ThemedText>
           </Pressable>
         </ThemedView>
 
@@ -90,37 +152,43 @@ export default function ContohScreen() {
           {status}
         </ThemedText>
 
-        <FlatList
-          data={networks}
-          keyExtractor={(item, index) => `${item.bssid}-${index}`}
-          style={styles.list}
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={
-            <ThemedText type="small" style={styles.empty}>
-              Belum ada jaringan Wi-Fi
-            </ThemedText>
-          }
-          renderItem={({ item }) => (
-            <View style={styles.networkRow}>
-              <ThemedText type="default" style={styles.ssid}>
-                {item.ssid || '(Tersembunyi)'}
-              </ThemedText>
-              <ThemedText type="small" style={styles.meta}>
-                RSSI {item.rssi} dBm · Ch {item.channel} · {item.frequency} MHz
-              </ThemedText>
-              <ThemedText type="small" style={styles.meta}>
-                {item.bssid}
-              </ThemedText>
-            </View>
-          )}
-        />
+        <ListWIfi />
 
         <ThemedText type="small" style={styles.footer}>
           Dibuat dengan Expo + TypeScript + React Native
         </ThemedText>
       </ThemedView>
-    </ThemedView>
+    </SafeAreaView>
   );
+
+  function ListWIfi() {
+    return (
+      <FlatList
+        data={networks}
+        keyExtractor={(item, index) => `${item.bssid}-${index}`}
+        style={styles.list}
+        contentContainerStyle={styles.listContent}
+        ListEmptyComponent={
+          <ThemedText type="small" style={styles.empty}>
+            Belum ada jaringan Wi-Fi
+          </ThemedText>
+        }
+        renderItem={({ item }) => (
+          <View style={styles.networkRow}>
+            <ThemedText type="default" style={styles.ssid}>
+              {item.ssid || '(Tersembunyi)'}
+            </ThemedText>
+            <ThemedText type="small" style={styles.meta}>
+              RSSI {item.rssi} dBm · Ch {item.channel} · {item.frequency} MHz
+            </ThemedText>
+            <ThemedText type="small" style={styles.meta}>
+              {item.bssid}
+            </ThemedText>
+          </View>
+        )}
+      />
+    );
+  }
 }
 
 const styles = StyleSheet.create({
@@ -128,12 +196,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Spacing.half,
   },
   card: {
     width: '100%',
     maxWidth: 400,
-    padding: Spacing.four,
+    padding: Spacing.half,
     borderRadius: Spacing.four,
     gap: Spacing.three,
     alignItems: 'center',
