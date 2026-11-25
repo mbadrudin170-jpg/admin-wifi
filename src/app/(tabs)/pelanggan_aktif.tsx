@@ -1,14 +1,19 @@
-import { Pressable, Text, TouchableOpacity, View } from "react-native";
+import { useEffect } from "react";
+import { Pressable, Text, View } from "react-native";
+import { FlatList } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { useEffect } from "react";
+import { usePelangganAktifStore } from "@/store/pelangganAktifStore";
 
 export default function PelangganAktifScreen() {
   const insets = useSafeAreaInsets();
+  const items = usePelangganAktifStore((s) => s.items);
+  const load = usePelangganAktifStore((s) => s.load);
+
   useEffect(() => {
-    console.log("PelangganAktifScreen mounted");
-    return () => console.log("PelangganAktifScreen unmounted");
-  }, []);
+    load();
+  }, [load]);
+
   return (
     <View style={{ flex: 1, backgroundColor: "#208AEF" }}>
       <View
@@ -25,14 +30,22 @@ export default function PelangganAktifScreen() {
         </Text>
       </View>
       <View style={{ flex: 1, backgroundColor: "#fff" }}>
-        <Text>satu</Text>
+        <FlatList
+          data={items}
+          keyExtractor={(item) => String(item.id)}
+          renderItem={({ item }) => (
+            <View style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: "#eee" }}>
+              <Text>{item.nama}</Text>
+            </View>
+          )}
+          ListEmptyComponent={<Text style={{ padding: 12 }}>Belum ada data</Text>}
+        />
       </View>
       <Pressable
         onPress={() => {
-          console.log("Navigasi ke form_pelanggan_aktif");
           router.push("/form_pelanggan_aktif");
         }}
-        style={{ padding: 12, backgroundColor: "#208AEF", borderRadius: 8 }}
+        style={{ padding: 12, backgroundColor: "#208AEF", borderRadius: 8, margin: 12 }}
       >
         <Text style={{ color: "#fff" }}>Tombol</Text>
       </Pressable>

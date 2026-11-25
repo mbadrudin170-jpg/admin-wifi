@@ -1,15 +1,18 @@
 import { useState } from "react";
 import { Button, StyleSheet, TextInput, View } from "react-native";
 
-import { addPelangganAktif } from "@/db/pelangganAktif";
+import { usePelangganAktifStore } from "@/store/pelangganAktifStore";
+import { router } from "expo-router";
 
 export default function FormPelangganAktifScreen() {
   const [nama, setNama] = useState("");
+  const add = usePelangganAktifStore((s) => s.add);
 
   const handleSave = () => {
     if (!nama.trim()) return;
-    addPelangganAktif(nama.trim());
+    add(nama.trim());
     setNama("");
+    router.back();
   };
 
   return (
