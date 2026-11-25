@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Alert, FlatList, StyleSheet, View } from "react-native";
+import { FlatList, StyleSheet, View } from "react-native";
 import * as Location from "expo-location";
 
 import MyModule from '../../../modules/my-module/src/MyModule';
@@ -25,35 +25,23 @@ export default function ContohScreen() {
   }, []);
 
   const handleScan = async () => {
-    Alert.alert(
-      "Izin Diperlukan",
-      "Aplikasi membutuhkan izin lokasi untuk memindai Wi-Fi.",
-      [
-        { text: "Batal", style: "cancel" },
-        {
-          text: "Izinkan",
-          onPress: async () => {
-            const { status } = await Location.requestForegroundPermissionsAsync();
-            if (status !== "granted") {
-              setStatus("Izin lokasi ditolak");
-              return;
-            }
-            setScanning(true);
-            setStatus("Memindai...");
-            try {
-              const result = await MyModule.scanWifi();
-              setStatus(result.message);
-              if (!result.started) {
-                setScanning(false);
-              }
-            } catch (error) {
-              setScanning(false);
-              setStatus(error instanceof Error ? error.message : "Gagal memindai");
-            }
-          },
-        },
-      ]
-    );
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== "granted") {
+      setStatus("Izin lokasi ditolak");
+      return;
+    }
+    setScanning(true);
+    setStatus("Memindai...");
+    try {
+      const result = await MyModule.scanWifi();
+      setStatus(result.message);
+      if (!result.started) {
+        setScanning(false);
+      }
+    } catch (error) {
+      setScanning(false);
+      setStatus(error instanceof Error ? error.message : "Gagal memindai");
+    }
   };
 
   return (
