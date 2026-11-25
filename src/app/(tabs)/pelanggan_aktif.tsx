@@ -7,7 +7,6 @@ import {
 } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { usePelangganAktifStore } from "@/store/pelangganAktifStore";
-import { PelangganAktif } from "@/db/pelangganAktif";
 
 export default function PelangganAktifScreen() {
   const insets = useSafeAreaInsets();
