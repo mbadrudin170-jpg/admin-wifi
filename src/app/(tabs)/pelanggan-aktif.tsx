@@ -37,6 +37,8 @@ export default function PelangganAktifScreen() {
 
       <Pressable
         onPress={() => {
+          console.log("ok");
+
           router.push("/form-pelanggan-aktif");
         }}
         style={{
