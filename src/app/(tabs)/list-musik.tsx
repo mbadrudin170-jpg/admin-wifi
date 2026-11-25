@@ -10,7 +10,6 @@ import { Spacing } from '@/constants/theme';
 type MusikLokal = {
   id: string;
   filename: string;
-  uri: string;
   duration: number;
 };
 
@@ -46,7 +45,6 @@ export default function ListMusik() {
             hasil.map((item) => ({
               id: item.id,
               filename: item.filename ?? 'Tanpa nama',
-              uri: '',
               duration: item.duration ?? 0,
             })),
           );
