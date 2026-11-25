@@ -1,11 +1,13 @@
-import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
+import {Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function PelangganAktifScreen() {
   return (
-    <ThemedView style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-      <ThemedText type="title">Pelanggan Aktif</ThemedText>
-      <ThemedText type="default">Screen sederhana</ThemedText>
-    </ThemedView>
+    <SafeAreaView>
+    <View>
+      <Text>
+        ok
+      </Text>
+    </View></SafeAreaView>
   );
 }
