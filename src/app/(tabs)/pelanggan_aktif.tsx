@@ -34,9 +34,8 @@ export default function PelangganAktifScreen() {
         </Text>
       </View>
 
-      <View style={{ flex: 1, backgroundColor: "#fff" }}>
-        <ListPelangganAktif />
-      </View>
+      <ListPelangganAktif />
+
       <Pressable
         onPress={() => {
           router.push("/form_pelanggan_aktif");
@@ -57,6 +56,8 @@ export default function PelangganAktifScreen() {
     return (
       <FlatList
         data={items}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ gap: 8, padding: 8 }}
         keyExtractor={(item) => String(item.id)}
         renderItem={({ item }) => (
           <View
