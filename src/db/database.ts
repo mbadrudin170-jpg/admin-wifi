@@ -11,3 +11,5 @@ export function initDb() {
     );
   `);
 }
+
+initDb();

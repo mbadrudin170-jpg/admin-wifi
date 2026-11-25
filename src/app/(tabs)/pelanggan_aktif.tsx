@@ -1,9 +1,14 @@
 import { Pressable, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import { useEffect } from "react";
 
 export default function PelangganAktifScreen() {
   const insets = useSafeAreaInsets();
+  useEffect(() => {
+    console.log("PelangganAktifScreen mounted");
+    return () => console.log("PelangganAktifScreen unmounted");
+  }, []);
   return (
     <View style={{ flex: 1, backgroundColor: "#208AEF" }}>
       <View
@@ -23,7 +28,10 @@ export default function PelangganAktifScreen() {
         <Text>satu</Text>
       </View>
       <Pressable
-        onPress={() => router.push("/form_pelanggan_aktif")}
+        onPress={() => {
+          console.log("Navigasi ke form_pelanggan_aktif");
+          router.push("/form_pelanggan_aktif");
+        }}
         style={{ padding: 12, backgroundColor: "#208AEF", borderRadius: 8 }}
       >
         <Text style={{ color: "#fff" }}>Tombol</Text>

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 
-import MyModule from '../../modules/my-module/src/MyModule';
-import type { WifiNetwork } from '../../modules/my-module/src/MyModule.types';
+import MyModule from '../../../modules/my-module/src/MyModule';
+import type { WifiNetwork } from '../../../modules/my-module/src/MyModule.types';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
