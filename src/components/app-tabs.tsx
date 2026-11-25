@@ -1,4 +1,5 @@
 import { NativeTabs } from "expo-router/native-tabs";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useColorScheme } from "react-native";
 
 import { Colors } from "@/constants/theme";
@@ -30,9 +31,9 @@ export default function AppTabs() {
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="contoh">
-        <NativeTabs.Trigger.Label>Contoh</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          src={require("@/assets/images/tabIcons/home.png")}
+       <NativeTabs.Trigger.Label>Contoh</NativeTabs.Trigger.Label>
+       <NativeTabs.Trigger.Icon
+          src={<NativeTabs.Trigger.VectorIcon family={MaterialIcons} name="home" />}
           renderingMode="template"
         />
       </NativeTabs.Trigger>
