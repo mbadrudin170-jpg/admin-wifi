@@ -7,6 +7,7 @@ import { ThemedView } from '@/components/themed-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Spacing } from '@/constants/theme';
 import { router } from 'expo-router';
+import { setPlaylist } from '../pemutar-musik';
 
 type MusikLokal = {
   id: string;
@@ -96,15 +97,16 @@ export default function ListMusik() {
                 Tidak ada musik ditemukan
               </ThemedText>
             }
-            renderItem={({ item }) => (
+            renderItem={({ item, index }) => (
               <Pressable
                 style={styles.row}
-                onPress={() =>
+                onPress={() => {
+                  setPlaylist(musik, index);
                   router.push({
                     pathname: '/pemutar-musik',
                     params: { id: item.id, judul: item.filename },
-                  })
-                }
+                  });
+                }}
               >
                 <ThemedText type="default" style={styles.nama}>
                   {item.filename}

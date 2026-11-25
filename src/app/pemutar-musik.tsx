@@ -20,6 +20,30 @@ const globalAudio = globalThis as {
   __audioIdGlobal?: string | null;
 };
 
+type PlaylistItem = { id: string; filename: string; duration: number };
+
+const globalPlaylist = globalThis as {
+  __playlist?: PlaylistItem[];
+  __playlistIndex?: number;
+};
+
+export function setPlaylist(items: PlaylistItem[], index: number) {
+  globalPlaylist.__playlist = items;
+  globalPlaylist.__playlistIndex = index;
+}
+
+export function getPlaylist() {
+  return globalPlaylist.__playlist ?? [];
+}
+
+export function getPlaylistIndex() {
+  return globalPlaylist.__playlistIndex ?? 0;
+}
+
+export function setPlaylistIndex(index: number) {
+  globalPlaylist.__playlistIndex = index;
+}
+
 function dapatkanPlayer() {
   if (!globalAudio.__audioPlayerGlobal) {
     globalAudio.__audioPlayerGlobal = createAudioPlayer(null);
@@ -71,6 +95,8 @@ export default function PemutarMusik() {
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
   const { id, judul } = useLocalSearchParams<{ id?: string; judul?: string }>();
+  const [judulAktif, setJudulAktif] = useState(judul ?? 'Pemutar Musik');
+  const idDimuatRef = useRef<string | null>(null);
   const player = dapatkanPlayer();
   const status = useAudioPlayerStatus(player);
   const [lebarProgress, setLebarProgress] = useState(0);
@@ -95,10 +121,10 @@ export default function PemutarMusik() {
     let aktif = true;
 
     const muatSumber = async () => {
-      if (!id || id === getIdGlobal()) {
+      if (!id || id === idDimuatRef.current) {
         console.log('PemutarMusik: sumber tidak dimuat ulang', {
           id,
-          idGlobal: getIdGlobal(),
+          idDimuat: idDimuatRef.current,
         });
         return;
       }
@@ -109,6 +135,7 @@ export default function PemutarMusik() {
         player.pause();
         player.replace(info.uri);
         setIdGlobal(id);
+        idDimuatRef.current = id;
         player.setActiveForLockScreen(true, { title: judul ?? 'Musik' });
         player.play();
         console.log('PemutarMusik: mulai putar');
@@ -122,13 +149,13 @@ export default function PemutarMusik() {
     return () => {
       aktif = false;
     };
-  }, [id, judul, player]);
+  }, [id, player]);
 
   useEffect(() => {
     let aktif = true;
 
     const muatLirik = async () => {
-      if (!judul) {
+      if (!judulAktif) {
         setLirik([]);
         setPesanLirik(null);
         return;
@@ -136,7 +163,7 @@ export default function PemutarMusik() {
       setMemuatLirik(true);
       setPesanLirik(null);
       try {
-        const namaBersih = (judul ?? '')
+        const namaBersih = (judulAktif ?? '')
           .replace(/\.[^.]+$/, '')
           .replace(/_\d+$/, '')
           .replace(/[_]+/g, ' ')
@@ -231,7 +258,7 @@ export default function PemutarMusik() {
     return () => {
       aktif = false;
     };
-  }, [judul]);
+  }, [judulAktif]);
 
   useEffect(() => {
     lineMetrics.current = new Array(lirik.length)
@@ -249,6 +276,7 @@ export default function PemutarMusik() {
     }
     if (idx < 0 || idx === lastLirikIndex.current) return;
     lastLirikIndex.current = idx;
+    console.log('PemutarMusik: lirik aktif', idx, lirik[idx]?.teks);
     try {
       scrollRef.current?.scrollToIndex({
         index: idx,
@@ -266,6 +294,43 @@ export default function PemutarMusik() {
     else break;
   }
 
+  useEffect(() => {
+    if (!status.didJustFinish) return;
+    const daftar = getPlaylist();
+    const indeksBerikut = getPlaylistIndex() + 1;
+    console.log(
+      'PemutarMusik: lagu selesai, indeks berikutnya',
+      indeksBerikut,
+      'dari',
+      daftar.length,
+    );
+    if (indeksBerikut >= daftar.length) {
+      console.log('PemutarMusik: akhir playlist');
+      return;
+    }
+
+    const berikut = daftar[indeksBerikut];
+    setPlaylistIndex(indeksBerikut);
+    setJudulAktif(berikut.filename);
+
+    let aktif = true;
+    const muat = async () => {
+      const info = await new MediaLibrary.Asset(berikut.id).getInfo();
+      if (aktif && info?.uri) {
+        player.pause();
+        player.replace(info.uri);
+        setIdGlobal(berikut.id);
+        player.setActiveForLockScreen(true, { title: berikut.filename });
+        player.play();
+      }
+    };
+    void muat();
+
+    return () => {
+      aktif = false;
+    };
+  }, [status.didJustFinish]);
+
   const progres =
     status.duration > 0
       ? Math.min(1, Math.max(0, status.currentTime / status.duration))
@@ -274,7 +339,9 @@ export default function PemutarMusik() {
   const seekKe = (x: number) => {
     if (lebarProgress <= 0 || status.duration <= 0) return;
     const rasio = Math.min(1, Math.max(0, x / lebarProgress));
-    void player.seekTo(rasio * status.duration);
+    const target = rasio * status.duration;
+    console.log('PemutarMusik: seek', { x, rasio, target });
+    void player.seekTo(target);
   };
 
   return (
@@ -285,7 +352,7 @@ export default function PemutarMusik() {
         </View>
 
         <ThemedText type="title" style={styles.judul} numberOfLines={2}>
-          {judul ?? 'Pemutar Musik'}
+          {judulAktif}
         </ThemedText>
         <ThemedText type="small" style={styles.subjudul}>
           {status.isBuffering
@@ -323,6 +390,7 @@ export default function PemutarMusik() {
           <Button
             title="Ulang"
             onPress={() => {
+              console.log('PemutarMusik: tombol Ulang');
               void player.seekTo(0);
               player.play();
             }}
@@ -330,7 +398,13 @@ export default function PemutarMusik() {
           <View style={styles.playButton}>
             <Button
               title={status.playing ? 'Jeda' : 'Putar'}
-              onPress={() => (status.playing ? player.pause() : player.play())}
+              onPress={() => {
+                console.log(
+                  'PemutarMusik: tombol',
+                  status.playing ? 'Jeda' : 'Putar',
+                );
+                status.playing ? player.pause() : player.play();
+              }}
             />
           </View>
         </View>
