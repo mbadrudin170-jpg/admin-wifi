@@ -176,22 +176,55 @@ class MyModule : Module() {
       val seen = mutableSetOf<String>()
 
       fun tambah(ip: String, mac: String) {
-        if (mac == "00:00:00:00:00:00" || !mac.contains(":")) return
+        val normalizedMac = mac.lowercase()
+
+        val validMac = Regex(
+          "^[0-9a-f]{2}(:[0-9a-f]{2}){5}$"
+        ).matches(normalizedMac)
+
+        if (!validMac) return
+        if (normalizedMac == "00:00:00:00:00:00") return
+        if (normalizedMac == "ff:ff:ff:ff:ff:ff") return
+
         if (seen.add(ip)) {
-          devices.add(mapOf("ip" to ip, "mac" to mac))
+          devices.add(
+            mapOf(
+              "ip" to ip,
+              "mac" to normalizedMac
+            )
+          )
         }
       }
 
-      fun parseLine(line: String) {
+      // Parser /proc/net/arp
+      fun parseArpLine(line: String) {
         val parts = line.trim().split(Regex("\\s+"))
-        if (parts.size >= 4 && parts[0] != "IP address" && parts[0] != "IP") {
-          tambah(parts[0], parts[3])
-        }
+
+        if (parts.size < 6 || parts[0] == "IP") return
+        if (parts[2] == "0x0") return
+
+        tambah(parts[0], parts[3])
+      }
+
+      // Parser ip neigh
+      fun parseNeighborLine(line: String) {
+        val parts = line.trim().split(Regex("\\s+"))
+
+        if (parts.isEmpty()) return
+
+        val macIndex = parts.indexOf("lladdr")
+
+        if (macIndex == -1 || macIndex + 1 >= parts.size) return
+
+        tambah(
+          parts[0],
+          parts[macIndex + 1]
+        )
       }
 
       // Sumber 1: berkas ARP kernel.
       try {
-        java.io.File("/proc/net/arp").forEachLine { parseLine(it) }
+        java.io.File("/proc/net/arp").forEachLine { parseArpLine(it) }
       } catch (e: Exception) {
         android.util.Log.w("MyModule", "Gagal membaca /proc/net/arp: ${e.message}")
       }
@@ -200,7 +233,7 @@ class MyModule : Module() {
       if (devices.isEmpty()) {
         try {
           val process = Runtime.getRuntime().exec(arrayOf("ip", "neigh"))
-          process.inputStream.bufferedReader().forEachLine { parseLine(it) }
+          process.inputStream.bufferedReader().forEachLine { parseNeighborLine(it) }
           process.waitFor()
         } catch (e: Exception) {
           android.util.Log.w("MyModule", "Gagal menjalankan ip neigh: ${e.message}")
@@ -211,7 +244,7 @@ class MyModule : Module() {
       if (devices.isEmpty()) {
         try {
           val process = Runtime.getRuntime().exec(arrayOf("sh", "-c", "cat /proc/net/arp"))
-          process.inputStream.bufferedReader().forEachLine { parseLine(it) }
+          process.inputStream.bufferedReader().forEachLine { parseArpLine(it) }
           process.waitFor()
         } catch (e: Exception) {
           android.util.Log.w("MyModule", "Gagal menjalankan cat /proc/net/arp: ${e.message}")
@@ -246,12 +279,12 @@ class MyModule : Module() {
 
             // Baca ulang setelah ping sweep.
             try {
-              java.io.File("/proc/net/arp").forEachLine { parseLine(it) }
+              java.io.File("/proc/net/arp").forEachLine { parseArpLine(it) }
             } catch (_: Exception) {}
             if (devices.isEmpty()) {
               try {
                 val process = Runtime.getRuntime().exec(arrayOf("ip", "neigh"))
-                process.inputStream.bufferedReader().forEachLine { parseLine(it) }
+process.inputStream.bufferedReader().forEachLine { parseNeighborLine(it) }
                 process.waitFor()
               } catch (_: Exception) {}
             }
@@ -260,6 +293,13 @@ class MyModule : Module() {
           android.util.Log.w("MyModule", "Ping sweep gagal: ${e.message}")
         }
       }
+
+      android.util.Log.d(
+        "MyModule",
+        "getConnectedDevices selesai: ${devices.size} perangkat ditemukan"
+      )
+
+      return@AsyncFunction devices
     }
     AsyncFunction("scanWifi") {
       val context = appContext.reactContext?.applicationContext
