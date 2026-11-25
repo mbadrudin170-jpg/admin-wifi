@@ -4,6 +4,7 @@ import type {
   MyModuleEvents,
   ScanResponse,
   WifiScanEvent,
+  ConnectedDevice,
 } from './MyModule.types';
 
 let nativeModule: any = null;
@@ -20,6 +21,9 @@ const fallback = {
       message: 'Modul native tidak tersedia (gunakan development build).',
     };
   },
+  async getConnectedDevices(): Promise<ConnectedDevice[]> {
+    return [];
+  },
   addListener: (_event: string, _cb: (e: WifiScanEvent) => void) => ({
     remove: () => {},
   }),
@@ -27,5 +31,6 @@ const fallback = {
 
 export default (nativeModule ?? fallback) as {
   scanWifi: () => Promise<ScanResponse>;
+  getConnectedDevices: () => Promise<ConnectedDevice[]>;
   addListener: (event: string, cb: (e: WifiScanEvent) => void) => { remove: () => void };
 };

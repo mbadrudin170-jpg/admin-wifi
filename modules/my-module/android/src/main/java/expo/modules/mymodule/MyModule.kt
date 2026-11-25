@@ -171,6 +171,24 @@ class MyModule : Module() {
       unregisterScanReceiver()
     }
 
+    AsyncFunction("getConnectedDevices") {
+      val devices = mutableListOf<Map<String, Any?>>()
+      try {
+        java.io.File("/proc/net/arp").forEachLine { line ->
+          val parts = line.trim().split(Regex("\\s+"))
+          if (parts.size >= 4 && parts[0] != "IP") {
+            val ip = parts[0]
+            val mac = parts[3]
+            if (mac != "00:00:00:00:00:00" && mac.contains(":")) {
+              devices.add(mapOf("ip" to ip, "mac" to mac))
+            }
+          }
+        }
+      } catch (e: Exception) {
+        // ignore
+      }
+      devices
+    }
     AsyncFunction("scanWifi") {
       val context = appContext.reactContext?.applicationContext
         ?: throw IllegalStateException("React context tidak tersedia")

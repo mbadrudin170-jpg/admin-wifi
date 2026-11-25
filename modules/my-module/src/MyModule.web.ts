@@ -3,6 +3,7 @@ import { registerWebModule, NativeModule } from 'expo';
 import type {
   MyModuleEvents,
   ScanResponse,
+  ConnectedDevice,
 } from './MyModule.types';
 
 class MyModule extends NativeModule<MyModuleEvents> {
@@ -11,6 +12,10 @@ class MyModule extends NativeModule<MyModuleEvents> {
       started: false,
       message: 'Pemindaian Wi-Fi hanya tersedia di Android.',
     };
+  }
+
+  async getConnectedDevices(): Promise<ConnectedDevice[]> {
+    return [];
   }
 }
 

@@ -1,3 +1,8 @@
+export type ConnectedDevice = {
+  ip: string;
+  mac: string;
+};
+
 export type WifiNetwork = {
   ssid: string;
   bssid: string;
