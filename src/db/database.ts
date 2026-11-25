@@ -4,8 +4,9 @@ export const db = SQLite.openDatabaseSync("app.db");
 
 export function initDb() {
   db.execSync(`
-    CREATE TABLE IF NOT EXISTS pelanggan_aktif (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+    DROP TABLE IF EXISTS pelanggan_aktif;
+    CREATE TABLE pelanggan_aktif (
+      id TEXT PRIMARY KEY,
       nama TEXT NOT NULL,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );

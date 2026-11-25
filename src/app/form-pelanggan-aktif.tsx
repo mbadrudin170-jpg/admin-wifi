@@ -1,16 +1,19 @@
 import { useState } from "react";
 import { Button, StyleSheet, TextInput, View } from "react-native";
+import { useLocalSearchParams } from "expo-router";
 
 import { usePelangganAktifStore } from "@/store/pelanggan-aktif-store";
 import { router } from "expo-router";
 
 export default function FormPelangganAktifScreen() {
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const isEdit = !!id;
   const [nama, setNama] = useState("");
   const add = usePelangganAktifStore((s) => s.add);
 
   const handleSave = () => {
     if (!nama.trim()) return;
-    add(nama.trim());
+    add({ nama: nama.trim() });
     setNama("");
     router.back();
   };
@@ -32,12 +35,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    gap: 12,
+    gap: 12
   },
   input: {
     borderWidth: 1,
     borderColor: "#ccc",
     borderRadius: 8,
-    padding: 12,
-  },
+    padding: 12
+  }
 });
