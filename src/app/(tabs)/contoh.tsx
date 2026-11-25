@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import * as Location from 'expo-location';
 
-import MyModule from '../../../modules/my-module/src/MyModule';
+import MyModule, { isNativeAvailable } from '../../../modules/my-module/src/MyModule';
 import type {
   WifiNetwork,
   ConnectedDevice,
@@ -83,7 +83,11 @@ export default function ContohScreen() {
 
   const [memuatPerangkat, setMemuatPerangkat] = useState(false);
 
-  const muatPerangkat = async () => {
+  const muatPerangkat = useCallback(async () => {
+    if (!isNativeAvailable) {
+      setStatus('Modul native tidak tersedia (gunakan development build).');
+      return;
+    }
     setMemuatPerangkat(true);
     try {
       const hasil = await MyModule.getConnectedDevices();
@@ -95,12 +99,12 @@ export default function ContohScreen() {
     } finally {
       setMemuatPerangkat(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (tampilan !== Tampilan.perangkat) return;
     void muatPerangkat();
-  }, [tampilan]);
+  }, [tampilan, muatPerangkat]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -246,9 +250,10 @@ export default function ContohScreen() {
               <ThemedText type="default" style={styles.ssid}>
                 {item.ip}
               </ThemedText>
-              <ThemedText type="small" style={styles.meta}>
-                MAC {item.mac}
-              </ThemedText>
+            <ThemedText type="small" style={styles.meta}>
+              MAC {item.mac}
+              {item.sumber ? ` · sumber: ${item.sumber}` : ''}
+            </ThemedText>
             </View>
           )}
         />

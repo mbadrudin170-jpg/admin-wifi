@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Button, Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Button, FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { useColorScheme } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import * as MediaLibrary from 'expo-media-library';
@@ -14,8 +14,7 @@ import { ThemedView } from '@/components/themed-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Spacing } from '@/constants/theme';
 
-// Player disimpan di globalThis agar tetap hidup saat Fast Refresh/hot reload
-// mereset scope modul, sehingga tidak terbentuk player ganda.
+// Player disimpan di globalThis agar tetap hidup saat Fast Refresh/hot reload.
 const globalAudio = globalThis as {
   __audioPlayerGlobal?: ReturnType<typeof createAudioPlayer>;
   __audioIdGlobal?: string | null;
@@ -36,6 +35,31 @@ function setIdGlobal(value: string | null) {
   globalAudio.__audioIdGlobal = value;
 }
 
+type LirikBaris = { waktu: number; teks: string };
+
+function parseLrc(lrc: string): LirikBaris[] {
+  const baris: LirikBaris[] = [];
+  for (const line of lrc.split('\n')) {
+    const matches = [
+      ...line.matchAll(/\[(\d{1,2}):(\d{2})(?:\.(\d{2,3}))?\]/g),
+    ];
+    const teks = line.replace(/\[[^\]]+\]/g, '').trim();
+    if (matches.length === 0) continue;
+    for (const m of matches) {
+      const menit = parseInt(m[1], 10);
+      const detik = parseInt(m[2], 10);
+      const fraksiStr = m[3] ?? '0';
+      const fraksi =
+        fraksiStr.length === 3
+          ? parseInt(fraksiStr, 10) / 1000
+          : parseInt(fraksiStr, 10) / 100;
+      baris.push({ waktu: menit * 60 + detik + fraksi, teks });
+    }
+  }
+  baris.sort((a, b) => a.waktu - b.waktu);
+  return baris;
+}
+
 function formatWaktu(detik: number) {
   if (!Number.isFinite(detik) || detik < 0) return '0:00';
   const menit = Math.floor(detik / 60);
@@ -50,6 +74,15 @@ export default function PemutarMusik() {
   const player = dapatkanPlayer();
   const status = useAudioPlayerStatus(player);
   const [lebarProgress, setLebarProgress] = useState(0);
+  const [tinggiScroll, setTinggiScroll] = useState(0);
+
+  const scrollRef = useRef<any>(null);
+  const lineMetrics = useRef<{ y: number; height: number }[]>([]);
+  const lastLirikIndex = useRef<number>(-1);
+
+  const [lirik, setLirik] = useState<LirikBaris[]>([]);
+  const [memuatLirik, setMemuatLirik] = useState(false);
+  const [pesanLirik, setPesanLirik] = useState<string | null>(null);
 
   useEffect(() => {
     void setAudioModeAsync({
@@ -63,14 +96,25 @@ export default function PemutarMusik() {
     let aktif = true;
 
     const muatSumber = async () => {
-      if (!id || id === getIdGlobal()) return;
+      if (!id || id === getIdGlobal()) {
+        console.log('PemutarMusik: sumber tidak dimuat ulang', {
+          id,
+          idGlobal: getIdGlobal(),
+        });
+        return;
+      }
+      console.log('PemutarMusik: memuat sumber audio', { id });
       const info = await new MediaLibrary.Asset(id).getInfo();
       if (aktif && info?.uri) {
+        console.log('PemutarMusik: URI audio ditemukan', info.uri);
         player.pause();
         player.replace(info.uri);
         setIdGlobal(id);
         player.setActiveForLockScreen(true, { title: judul ?? 'Musik' });
         player.play();
+        console.log('PemutarMusik: mulai putar');
+      } else {
+        console.log('PemutarMusik: URI audio tidak ditemukan');
       }
     };
 
@@ -80,6 +124,148 @@ export default function PemutarMusik() {
       aktif = false;
     };
   }, [id, judul, player]);
+
+  useEffect(() => {
+    let aktif = true;
+
+    const muatLirik = async () => {
+      if (!judul) {
+        setLirik([]);
+        setPesanLirik(null);
+        return;
+      }
+      setMemuatLirik(true);
+      setPesanLirik(null);
+      try {
+        const namaBersih = (judul ?? '')
+          .replace(/\.[^.]+$/, '')
+          .replace(/_\d+$/, '')
+          .replace(/[_]+/g, ' ')
+          .trim();
+        const kueri = namaBersih || judul || '';
+        const parts = kueri.split(' - ');
+        let track = kueri;
+        let artist = '';
+        if (parts.length >= 2) {
+          artist = parts[0].trim();
+          track = parts.slice(1).join(' - ').trim();
+        }
+        track = track.replace(/\([^)]*\)/g, '').trim();
+
+        const buatUrl = (withArtist: boolean) => {
+          const params = new URLSearchParams();
+          params.set('track_name', track || kueri);
+          if (withArtist && artist) params.set('artist_name', artist);
+          return `https://lrclib.net/api/search?${params.toString()}`;
+        };
+
+        let url = buatUrl(true);
+        console.log('PemutarMusik: memuat lirik', url);
+        let res = await fetch(url);
+        if (!res.ok) throw new Error('Gagal memuat lirik');
+        let data = await res.json();
+        console.log(
+          'PemutarMusik: respons lirik',
+          Array.isArray(data) ? data.length : data,
+        );
+
+        if ((!Array.isArray(data) || data.length === 0) && artist) {
+          const url2 = buatUrl(false);
+          console.log('PemutarMusik: coba tanpa artist', url2);
+          const res2 = await fetch(url2);
+          if (res2.ok) {
+            data = await res2.json();
+            console.log(
+              'PemutarMusik: respons lirik',
+              Array.isArray(data) ? data.length : data,
+            );
+          }
+        }
+
+        const item = Array.isArray(data)
+          ? (data.find((x: any) => typeof x?.syncedLyrics === 'string') ??
+            data.find((x: any) => typeof x?.plainLyrics === 'string'))
+          : null;
+        if (!item) {
+          if (aktif) {
+            setLirik([]);
+            setPesanLirik('Lirik tidak ditemukan');
+          }
+          console.log('PemutarMusik: lirik tidak ditemukan');
+          return;
+        }
+        if (typeof item.syncedLyrics === 'string') {
+          const baris = parseLrc(item.syncedLyrics);
+          if (aktif) setLirik(baris);
+          console.log(
+            'PemutarMusik: lirik sinkron dimuat',
+            baris.length,
+            'baris',
+          );
+        } else if (typeof item.plainLyrics === 'string') {
+          const baris = item.plainLyrics
+            .split('\n')
+            .map((t: string) => t.trim())
+            .filter((t: string) => t.length > 0)
+            .map((t: string) => ({ waktu: 0, teks: t }));
+          if (aktif) setLirik(baris);
+          console.log('PemutarMusik: lirik teks dimuat', baris.length, 'baris');
+        } else {
+          if (aktif) {
+            setLirik([]);
+            setPesanLirik('Lirik tidak ditemukan');
+          }
+        }
+      } catch (error) {
+        console.log('PemutarMusik: gagal memuat lirik', error);
+        if (aktif) {
+          setLirik([]);
+          setPesanLirik('Gagal memuat lirik');
+        }
+      } finally {
+        if (aktif) setMemuatLirik(false);
+      }
+    };
+
+    void muatLirik();
+
+    return () => {
+      aktif = false;
+    };
+  }, [judul]);
+
+  useEffect(() => {
+    lineMetrics.current = new Array(lirik.length)
+      .fill(null)
+      .map(() => ({ y: 0, height: 0 }));
+    lastLirikIndex.current = -1;
+  }, [lirik]);
+
+  useEffect(() => {
+    if (lirik.length === 0) return;
+    let idx = -1;
+    for (let i = 0; i < lirik.length; i++) {
+      if (lirik[i].waktu <= status.currentTime) idx = i;
+      else break;
+    }
+    if (idx < 0 || idx === lastLirikIndex.current) return;
+    lastLirikIndex.current = idx;
+    try {
+      scrollRef.current?.scrollToIndex({
+        index: idx,
+        animated: true,
+        viewPosition: 0.5,
+      });
+    } catch {
+      // Abaikan jika item belum terukur.
+    }
+  }, [lirik, status.currentTime]);
+
+  let indeksAktif = -1;
+  for (let i = 0; i < lirik.length; i++) {
+    if (lirik[i].waktu <= status.currentTime) indeksAktif = i;
+    else break;
+  }
 
   const progres =
     status.duration > 0
@@ -149,6 +335,44 @@ export default function PemutarMusik() {
             />
           </View>
         </View>
+
+        <View style={styles.lirikBox}>
+          <ThemedText type="small" style={styles.lirikJudul}>
+            Lirik
+          </ThemedText>
+          {memuatLirik ? (
+            <ThemedText type="small" style={styles.lirikInfo}>
+              Memuat lirik...
+            </ThemedText>
+          ) : pesanLirik ? (
+            <ThemedText type="small" style={styles.lirikInfo}>
+              {pesanLirik}
+            </ThemedText>
+          ) : lirik.length === 0 ? (
+            <ThemedText type="small" style={styles.lirikInfo}>
+              Tidak ada lirik
+            </ThemedText>
+          ) : (
+            <FlatList
+              ref={scrollRef}
+              data={lirik}
+              keyExtractor={(_, i) => String(i)}
+              style={styles.lirikScroll}
+              showsVerticalScrollIndicator={false}
+              renderItem={({ item: b, index: i }) => (
+                <ThemedText
+                  type={i === indeksAktif ? 'default' : 'small'}
+                  style={[
+                    styles.lirikBaris,
+                    i === indeksAktif && styles.lirikAktif,
+                  ]}
+                >
+                  {b.teks || '♪'}
+                </ThemedText>
+              )}
+            />
+          )}
+        </View>
       </ThemedView>
     </SafeAreaView>
   );
@@ -207,5 +431,30 @@ const styles = StyleSheet.create({
   },
   playButton: {
     minWidth: 96,
+  },
+  lirikBox: {
+    width: '100%',
+    maxHeight: 220,
+    gap: Spacing.two,
+  },
+  lirikJudul: {
+    fontWeight: '600',
+    opacity: 0.8,
+  },
+  lirikInfo: {
+    textAlign: 'center',
+    opacity: 0.6,
+  },
+  lirikScroll: {
+    maxHeight: 180,
+  },
+  lirikBaris: {
+    textAlign: 'center',
+    opacity: 0.6,
+    paddingVertical: 2,
+  },
+  lirikAktif: {
+    opacity: 1,
+    fontWeight: '600',
   },
 });

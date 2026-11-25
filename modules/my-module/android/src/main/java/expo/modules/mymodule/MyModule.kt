@@ -8,8 +8,9 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.net.ConnectivityManager
-import android.net.LinkAddress
+import android.net.Inet4Address
 import android.net.LinkProperties
+import android.net.NetworkCapabilities
 import android.net.wifi.WifiManager
 import android.os.Build
 import expo.modules.kotlin.modules.Module
@@ -38,22 +39,6 @@ class MyModule : Module() {
       ?: throw IllegalStateException("WifiManager tidak tersedia")
   }
 
-  private fun inetToInt(address: java.net.Inet4Address): Int {
-    val bytes = address.address
-    return ((bytes[0].toInt() and 0xFF) shl 24) or
-      ((bytes[1].toInt() and 0xFF) shl 16) or
-      ((bytes[2].toInt() and 0xFF) shl 8) or
-      (bytes[3].toInt() and 0xFF)
-  }
-
-  private fun intToBytes(value: Int): ByteArray {
-    return byteArrayOf(
-      ((value shr 24) and 0xFF).toByte(),
-      ((value shr 16) and 0xFF).toByte(),
-      ((value shr 8) and 0xFF).toByte(),
-      (value and 0xFF).toByte()
-    )
-  }
   private fun isLocationEnabled(context: Context): Boolean {
     val manager = context.getSystemService(
       Context.LOCATION_SERVICE
@@ -173,6 +158,23 @@ class MyModule : Module() {
     receiverContext = null
   }
 
+  private fun inetToInt(address: Inet4Address): Long {
+    val bytes = address.address
+    return ((bytes[0].toLong() and 0xFFL) shl 24) or
+      ((bytes[1].toLong() and 0xFFL) shl 16) or
+      ((bytes[2].toLong() and 0xFFL) shl 8) or
+      (bytes[3].toLong() and 0xFFL)
+  }
+
+  private fun intToBytes(value: Int): ByteArray {
+    return byteArrayOf(
+      ((value shr 24) and 0xFF).toByte(),
+      ((value shr 16) and 0xFF).toByte(),
+      ((value shr 8) and 0xFF).toByte(),
+      (value and 0xFF).toByte()
+    )
+  }
+
   override fun definition() = ModuleDefinition {
     Name("MyModule")
 
@@ -194,7 +196,7 @@ class MyModule : Module() {
       val devices = mutableListOf<Map<String, Any?>>()
       val seen = mutableSetOf<String>()
 
-      fun tambah(ip: String, mac: String) {
+      fun tambah(ip: String, mac: String, sumber: String) {
         val normalizedMac = mac.lowercase()
 
         val validMac = Regex(
@@ -209,93 +211,129 @@ class MyModule : Module() {
           devices.add(
             mapOf(
               "ip" to ip,
-              "mac" to normalizedMac
+              "mac" to normalizedMac,
+              "sumber" to sumber
             )
+          )
+          android.util.Log.d(
+            "MyModule",
+            "Perangkat ditemukan [$sumber]: $ip $normalizedMac"
           )
         }
       }
 
-      // Parser /proc/net/arp
-      fun parseArpLine(line: String) {
-        val parts = line.trim().split(Regex("\\s+"))
-
-        if (parts.size < 6 || parts[0] == "IP") return
-        if (parts[2] == "0x0") return
-
-        tambah(parts[0], parts[3])
-      }
-
       // Parser ip neigh
-      fun parseNeighborLine(line: String) {
+      fun parseNeighborLine(line: String, iface: String?) {
         val parts = line.trim().split(Regex("\\s+"))
 
-        if (parts.isEmpty()) return
+        if (parts.size < 4 || parts[0] == "IP") return
+        if (parts[1] != "dev") return
+        if (iface != null && parts[2] != iface) return
 
         val macIndex = parts.indexOf("lladdr")
-
         if (macIndex == -1 || macIndex + 1 >= parts.size) return
 
-        tambah(
-          parts[0],
-          parts[macIndex + 1]
+        val state = parts.getOrElse(macIndex + 2) { "" }
+        if (state == "FAILED" || state == "INCOMPLETE") return
+
+        tambah(parts[0], parts[macIndex + 1], "ip neigh")
+      }
+
+      // Validasi jaringan Wi-Fi dan ambil informasi jaringan.
+      val context = appContext.reactContext?.applicationContext
+        ?: throw IllegalStateException("React context tidak tersedia")
+
+      val connectivityManager =
+        context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+      val network = connectivityManager.activeNetwork
+        ?: throw IllegalStateException("Tidak ada jaringan aktif")
+
+      val capabilities = connectivityManager.getNetworkCapabilities(network)
+        ?: throw IllegalStateException("Informasi jaringan tidak tersedia")
+
+      if (
+        !capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN)
+      ) {
+        throw IllegalStateException("Jaringan aktif bukan koneksi Wi-Fi langsung")
+      }
+
+      val linkProperties = connectivityManager.getLinkProperties(network)
+        ?: throw IllegalStateException("Informasi Wi-Fi tidak tersedia")
+
+      val iface = linkProperties.interfaceName
+      val ipv4 = linkProperties.linkAddresses
+        .map { it.address }
+        .firstOrNull { it is Inet4Address } as? Inet4Address
+        ?: throw IllegalStateException("Alamat IPv4 Wi-Fi tidak ditemukan")
+
+      val prefixLength = linkProperties.linkAddresses
+        .firstOrNull { it.address == ipv4 }
+        ?.prefixLength ?: 24
+
+      val gateway = linkProperties.routes
+        .firstOrNull { it.isDefaultRoute }
+        ?.gateway
+        ?.hostAddress
+
+      android.util.Log.d(
+        "MyModule",
+        "Wi-Fi aktif: iface=$iface ip=$ipv4 prefix=$prefixLength gateway=$gateway"
+      )
+
+      // Neighbor table sebagai sumber utama.
+      fun jalankanNeighbor(cmd: Array<String>) {
+        try {
+          val process = Runtime.getRuntime().exec(cmd)
+          process.inputStream.bufferedReader().forEachLine {
+            parseNeighborLine(it, iface)
+          }
+          process.waitFor()
+          android.util.Log.d("MyModule", "Neighbor selesai: ${cmd.joinToString(" ")}")
+        } catch (e: Exception) {
+          android.util.Log.w(
+            "MyModule",
+            "Gagal menjalankan ${cmd.joinToString(" ")}: ${e.message}"
+          )
+        }
+      }
+
+      jalankanNeighbor(
+        arrayOf("ip", "-4", "neigh", "show", "dev", iface ?: "wlan0")
+      )
+
+      // Ping sweep untuk mengisi neighbor cache, lalu baca ulang.
+      try {
+        val ipLong = inetToInt(ipv4)
+        val hostBits = 32 - prefixLength.coerceIn(0, 32)
+        val mask = if (prefixLength == 0) {
+          0L
+        } else {
+          (0xFFFF_FFFFL shl hostBits) and 0xFFFF_FFFFL
+        }
+        val networkAddress = ipLong and mask
+        val broadcastAddress = networkAddress or (0xFFFF_FFFFL ushr prefixLength)
+        val firstHost = if (prefixLength <= 30) networkAddress + 1 else networkAddress
+        val lastHost = if (prefixLength <= 30) broadcastAddress - 1 else broadcastAddress
+        val totalHosts = (lastHost - firstHost + 1).coerceAtLeast(0)
+        val hostCount = totalHosts.coerceAtMost(1024)
+
+        android.util.Log.d(
+          "MyModule",
+          "Ping sweep: $hostCount host (dari $totalHosts), prefix=$prefixLength"
         )
-      }
 
-      // Sumber 1: berkas ARP kernel.
-      try {
-        java.io.File("/proc/net/arp").forEachLine { parseArpLine(it) }
-      } catch (e: Exception) {
-        android.util.Log.w("MyModule", "Gagal membaca /proc/net/arp: ${e.message}")
-      }
-
-      // Sumber 2: perintah ip neigh (lebih andal di Android baru).
-      try {
-        val process = Runtime.getRuntime().exec(arrayOf("ip", "neigh"))
-        process.inputStream.bufferedReader().forEachLine { parseNeighborLine(it) }
-        process.waitFor()
-      } catch (e: Exception) {
-        android.util.Log.w("MyModule", "Gagal menjalankan ip neigh: ${e.message}")
-      }
-
-      // Sumber 3: perintah cat /proc/net/arp.
-      try {
-        val process = Runtime.getRuntime().exec(arrayOf("sh", "-c", "cat /proc/net/arp"))
-        process.inputStream.bufferedReader().forEachLine { parseArpLine(it) }
-        process.waitFor()
-      } catch (e: Exception) {
-        android.util.Log.w("MyModule", "Gagal menjalankan cat /proc/net/arp: ${e.message}")
-      }
-
-      // Ping sweep subnet lokal untuk mengisi cache ARP, lalu baca ulang.
-      try {
-        val context = appContext.reactContext?.applicationContext
-        val connectivityManager =
-          context?.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
-        val linkProperties: LinkProperties? =
-          connectivityManager?.getLinkProperties(connectivityManager.activeNetwork)
-        val ipv4Address = linkProperties?.linkAddresses
-          ?.map { it.address }
-          ?.firstOrNull { it is java.net.Inet4Address } as? java.net.Inet4Address
-
-        if (ipv4Address != null) {
-          val prefixLength = linkProperties?.linkAddresses
-            ?.firstOrNull { it.address == ipv4Address }
-            ?.prefixLength ?: 24
-
-          val ipInt = inetToInt(ipv4Address)
-          val hostBits = 32 - prefixLength.coerceIn(1, 31)
-          val mask = if (prefixLength == 0) 0 else (-1 shl hostBits)
-          val network = ipInt and mask
-          val maxHosts = (1 shl hostBits) - 2
-          val hostCount = maxHosts.coerceAtMost(1024).coerceAtLeast(0)
-
+        if (hostCount > 0) {
           val pool = java.util.concurrent.Executors.newFixedThreadPool(32)
-          val futures = (1..hostCount).map { i ->
+          val futures = (0 until hostCount).map { i ->
             pool.submit<Boolean> {
               try {
-                val hostInt = network + i
-                if (hostInt == ipInt) return@submit false
-                java.net.InetAddress.getByAddress(intToBytes(hostInt)).isReachable(200)
+                val hostInt = firstHost + i
+                if (hostInt == ipLong) return@submit false
+                java.net.InetAddress.getByAddress(
+                  intToBytes(hostInt.toInt())
+                ).isReachable(200)
               } catch (_: Exception) {
                 false
               }
@@ -304,15 +342,10 @@ class MyModule : Module() {
           futures.forEach { runCatching { it.get() } }
           pool.shutdown()
 
-          // Baca ulang setelah ping sweep.
-          try {
-            java.io.File("/proc/net/arp").forEachLine { parseArpLine(it) }
-          } catch (_: Exception) {}
-          try {
-            val process = Runtime.getRuntime().exec(arrayOf("ip", "neigh"))
-            process.inputStream.bufferedReader().forEachLine { parseNeighborLine(it) }
-            process.waitFor()
-          } catch (_: Exception) {}
+          // Baca ulang neighbor table setelah ping sweep.
+          jalankanNeighbor(
+            arrayOf("ip", "-4", "neigh", "show", "dev", iface ?: "wlan0")
+          )
         }
       } catch (e: Exception) {
         android.util.Log.w("MyModule", "Ping sweep gagal: ${e.message}")

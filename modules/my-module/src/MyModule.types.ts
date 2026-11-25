@@ -1,6 +1,7 @@
 export type ConnectedDevice = {
   ip: string;
   mac: string;
+  sumber?: string;
 };
 
 export type WifiNetwork = {

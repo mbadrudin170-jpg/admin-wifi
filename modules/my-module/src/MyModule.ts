@@ -22,12 +22,14 @@ const fallback = {
     };
   },
   async getConnectedDevices(): Promise<ConnectedDevice[]> {
-    return [];
+    throw new Error('Modul native tidak tersedia (gunakan development build).');
   },
   addListener: (_event: string, _cb: (e: WifiScanEvent) => void) => ({
     remove: () => {},
   }),
 };
+
+export const isNativeAvailable = nativeModule != null;
 
 export default (nativeModule ?? fallback) as {
   scanWifi: () => Promise<ScanResponse>;
