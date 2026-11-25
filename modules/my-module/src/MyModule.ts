@@ -1,22 +1,12 @@
 import { NativeModule, requireNativeModule } from 'expo';
 
-export type WifiNetwork = {
-  ssid: string;
-  bssid: string;
-  rssi: number;
-  frequency: number;
-  channel: number;
-  capabilities: string;
-};
+import type {
+  MyModuleEvents,
+  ScanResponse,
+} from './MyModule.types';
 
-export type ScanResponse = {
-  started: boolean;
-  message: string;
-};
-
-declare class MyModule extends NativeModule {
+declare class MyModule extends NativeModule<MyModuleEvents> {
   scanWifi(): Promise<ScanResponse>;
-  getScanResults(): Promise<WifiNetwork[]>;
 }
 
 export default requireNativeModule<MyModule>('MyModule');
