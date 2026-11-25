@@ -14,15 +14,26 @@ import { ThemedView } from '@/components/themed-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Spacing } from '@/constants/theme';
 
-// Player disimpan di level modul agar tetap hidup saat layar unmount (navigasi balik).
-let playerGlobal: ReturnType<typeof createAudioPlayer> | null = null;
-let idGlobal: string | null = null;
+// Player disimpan di globalThis agar tetap hidup saat Fast Refresh/hot reload
+// mereset scope modul, sehingga tidak terbentuk player ganda.
+const globalAudio = globalThis as {
+  __audioPlayerGlobal?: ReturnType<typeof createAudioPlayer>;
+  __audioIdGlobal?: string | null;
+};
 
 function dapatkanPlayer() {
-  if (!playerGlobal) {
-    playerGlobal = createAudioPlayer(null);
+  if (!globalAudio.__audioPlayerGlobal) {
+    globalAudio.__audioPlayerGlobal = createAudioPlayer(null);
   }
-  return playerGlobal;
+  return globalAudio.__audioPlayerGlobal;
+}
+
+function getIdGlobal() {
+  return globalAudio.__audioIdGlobal ?? null;
+}
+
+function setIdGlobal(value: string | null) {
+  globalAudio.__audioIdGlobal = value;
 }
 
 function formatWaktu(detik: number) {
@@ -52,11 +63,12 @@ export default function PemutarMusik() {
     let aktif = true;
 
     const muatSumber = async () => {
-      if (!id || id === idGlobal) return;
+      if (!id || id === getIdGlobal()) return;
       const info = await new MediaLibrary.Asset(id).getInfo();
       if (aktif && info?.uri) {
+        player.pause();
         player.replace(info.uri);
-        idGlobal = id;
+        setIdGlobal(id);
         player.setActiveForLockScreen(true, { title: judul ?? 'Musik' });
         player.play();
       }
@@ -100,7 +112,10 @@ export default function PemutarMusik() {
 
         <View style={styles.progressWrap}>
           <Pressable
-            style={[styles.progressTrack, { backgroundColor: colors.backgroundSelected }]}
+            style={[
+              styles.progressTrack,
+              { backgroundColor: colors.backgroundSelected },
+            ]}
             onLayout={(e) => setLebarProgress(e.nativeEvent.layout.width)}
             onPress={(e) => seekKe(e.nativeEvent.locationX)}
           >
@@ -112,7 +127,9 @@ export default function PemutarMusik() {
             />
           </Pressable>
           <View style={styles.waktuRow}>
-            <ThemedText type="small">{formatWaktu(status.currentTime)}</ThemedText>
+            <ThemedText type="small">
+              {formatWaktu(status.currentTime)}
+            </ThemedText>
             <ThemedText type="small">{formatWaktu(status.duration)}</ThemedText>
           </View>
         </View>

@@ -7,6 +7,9 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.location.LocationManager
+import android.net.ConnectivityManager
+import android.net.LinkAddress
+import android.net.LinkProperties
 import android.net.wifi.WifiManager
 import android.os.Build
 import expo.modules.kotlin.modules.Module
@@ -35,6 +38,22 @@ class MyModule : Module() {
       ?: throw IllegalStateException("WifiManager tidak tersedia")
   }
 
+  private fun inetToInt(address: java.net.Inet4Address): Int {
+    val bytes = address.address
+    return ((bytes[0].toInt() and 0xFF) shl 24) or
+      ((bytes[1].toInt() and 0xFF) shl 16) or
+      ((bytes[2].toInt() and 0xFF) shl 8) or
+      (bytes[3].toInt() and 0xFF)
+  }
+
+  private fun intToBytes(value: Int): ByteArray {
+    return byteArrayOf(
+      ((value shr 24) and 0xFF).toByte(),
+      ((value shr 16) and 0xFF).toByte(),
+      ((value shr 8) and 0xFF).toByte(),
+      (value and 0xFF).toByte()
+    )
+  }
   private fun isLocationEnabled(context: Context): Boolean {
     val manager = context.getSystemService(
       Context.LOCATION_SERVICE
@@ -230,68 +249,73 @@ class MyModule : Module() {
       }
 
       // Sumber 2: perintah ip neigh (lebih andal di Android baru).
-      if (devices.isEmpty()) {
-        try {
-          val process = Runtime.getRuntime().exec(arrayOf("ip", "neigh"))
-          process.inputStream.bufferedReader().forEachLine { parseNeighborLine(it) }
-          process.waitFor()
-        } catch (e: Exception) {
-          android.util.Log.w("MyModule", "Gagal menjalankan ip neigh: ${e.message}")
-        }
+      try {
+        val process = Runtime.getRuntime().exec(arrayOf("ip", "neigh"))
+        process.inputStream.bufferedReader().forEachLine { parseNeighborLine(it) }
+        process.waitFor()
+      } catch (e: Exception) {
+        android.util.Log.w("MyModule", "Gagal menjalankan ip neigh: ${e.message}")
       }
 
       // Sumber 3: perintah cat /proc/net/arp.
-      if (devices.isEmpty()) {
-        try {
-          val process = Runtime.getRuntime().exec(arrayOf("sh", "-c", "cat /proc/net/arp"))
-          process.inputStream.bufferedReader().forEachLine { parseArpLine(it) }
-          process.waitFor()
-        } catch (e: Exception) {
-          android.util.Log.w("MyModule", "Gagal menjalankan cat /proc/net/arp: ${e.message}")
-        }
+      try {
+        val process = Runtime.getRuntime().exec(arrayOf("sh", "-c", "cat /proc/net/arp"))
+        process.inputStream.bufferedReader().forEachLine { parseArpLine(it) }
+        process.waitFor()
+      } catch (e: Exception) {
+        android.util.Log.w("MyModule", "Gagal menjalankan cat /proc/net/arp: ${e.message}")
       }
 
-      // Jika masih kosong, lakukan ping sweep subnet lokal untuk mengisi cache ARP.
-      if (devices.isEmpty()) {
-        try {
-          val context = appContext.reactContext?.applicationContext
-          val wifiManager = context?.getSystemService(Context.WIFI_SERVICE) as? WifiManager
-          val ipInt = wifiManager?.connectionInfo?.ipAddress ?: 0
-          if (ipInt != 0) {
-            val prefix = String.format(
-              "%d.%d.%d",
-              ipInt and 0xff,
-              (ipInt shr 8) and 0xff,
-              (ipInt shr 16) and 0xff
-            )
-            val pool = java.util.concurrent.Executors.newFixedThreadPool(32)
-            val futures = (1..254).map { i ->
-              pool.submit<Boolean> {
-                try {
-                  java.net.InetAddress.getByName("$prefix.$i").isReachable(200)
-                } catch (_: Exception) {
-                  false
-                }
+      // Ping sweep subnet lokal untuk mengisi cache ARP, lalu baca ulang.
+      try {
+        val context = appContext.reactContext?.applicationContext
+        val connectivityManager =
+          context?.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+        val linkProperties: LinkProperties? =
+          connectivityManager?.getLinkProperties(connectivityManager.activeNetwork)
+        val ipv4Address = linkProperties?.linkAddresses
+          ?.map { it.address }
+          ?.firstOrNull { it is java.net.Inet4Address } as? java.net.Inet4Address
+
+        if (ipv4Address != null) {
+          val prefixLength = linkProperties?.linkAddresses
+            ?.firstOrNull { it.address == ipv4Address }
+            ?.prefixLength ?: 24
+
+          val ipInt = inetToInt(ipv4Address)
+          val hostBits = 32 - prefixLength.coerceIn(1, 31)
+          val mask = if (prefixLength == 0) 0 else (-1 shl hostBits)
+          val network = ipInt and mask
+          val maxHosts = (1 shl hostBits) - 2
+          val hostCount = maxHosts.coerceAtMost(1024).coerceAtLeast(0)
+
+          val pool = java.util.concurrent.Executors.newFixedThreadPool(32)
+          val futures = (1..hostCount).map { i ->
+            pool.submit<Boolean> {
+              try {
+                val hostInt = network + i
+                if (hostInt == ipInt) return@submit false
+                java.net.InetAddress.getByAddress(intToBytes(hostInt)).isReachable(200)
+              } catch (_: Exception) {
+                false
               }
             }
-            futures.forEach { runCatching { it.get() } }
-            pool.shutdown()
-
-            // Baca ulang setelah ping sweep.
-            try {
-              java.io.File("/proc/net/arp").forEachLine { parseArpLine(it) }
-            } catch (_: Exception) {}
-            if (devices.isEmpty()) {
-              try {
-                val process = Runtime.getRuntime().exec(arrayOf("ip", "neigh"))
-process.inputStream.bufferedReader().forEachLine { parseNeighborLine(it) }
-                process.waitFor()
-              } catch (_: Exception) {}
-            }
           }
-        } catch (e: Exception) {
-          android.util.Log.w("MyModule", "Ping sweep gagal: ${e.message}")
+          futures.forEach { runCatching { it.get() } }
+          pool.shutdown()
+
+          // Baca ulang setelah ping sweep.
+          try {
+            java.io.File("/proc/net/arp").forEachLine { parseArpLine(it) }
+          } catch (_: Exception) {}
+          try {
+            val process = Runtime.getRuntime().exec(arrayOf("ip", "neigh"))
+            process.inputStream.bufferedReader().forEachLine { parseNeighborLine(it) }
+            process.waitFor()
+          } catch (_: Exception) {}
         }
+      } catch (e: Exception) {
+        android.util.Log.w("MyModule", "Ping sweep gagal: ${e.message}")
       }
 
       android.util.Log.d(

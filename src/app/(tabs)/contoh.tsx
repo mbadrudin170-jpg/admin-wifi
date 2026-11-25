@@ -81,25 +81,25 @@ export default function ContohScreen() {
     };
   }, []);
 
+  const [memuatPerangkat, setMemuatPerangkat] = useState(false);
+
+  const muatPerangkat = async () => {
+    setMemuatPerangkat(true);
+    try {
+      const hasil = await MyModule.getConnectedDevices();
+      console.log('getConnectedDevices', hasil);
+      setDevices(hasil);
+      setStatus(`Ditemukan ${hasil.length} perangkat`);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Gagal memuat perangkat');
+    } finally {
+      setMemuatPerangkat(false);
+    }
+  };
+
   useEffect(() => {
     if (tampilan !== Tampilan.perangkat) return;
-    let aktif = true;
-    const muat = async () => {
-      try {
-        const hasil = await MyModule.getConnectedDevices();
-        console.log('getConnectedDevices', hasil);
-        if (aktif) setDevices(hasil);
-      } catch (error) {
-        if (aktif)
-          setStatus(
-            error instanceof Error ? error.message : 'Gagal memuat perangkat',
-          );
-      }
-    };
-    void muat();
-    return () => {
-      aktif = false;
-    };
+    void muatPerangkat();
   }, [tampilan]);
 
   return (
@@ -217,27 +217,42 @@ export default function ContohScreen() {
   }
   function ListPerangkat() {
     return (
-      <FlatList
-        data={devices}
-        keyExtractor={(item, index) => `${item.ip}-${item.mac}-${index}`}
-        style={styles.list}
-        contentContainerStyle={styles.listContent}
-        ListEmptyComponent={
-          <ThemedText type="small" style={styles.empty}>
-            Belum ada perangkat terhubung
+      <View style={{ alignSelf: 'stretch', gap: Spacing.two, flex: 1 }}>
+        <Pressable
+          onPress={() => void muatPerangkat()}
+          disabled={memuatPerangkat}
+          style={[
+            styles.button,
+            memuatPerangkat && styles.buttonDisabled,
+            { alignSelf: 'stretch' },
+          ]}
+        >
+          <ThemedText style={styles.buttonText}>
+            {memuatPerangkat ? 'Memindai...' : 'Pindai Ulang'}
           </ThemedText>
-        }
-        renderItem={({ item }) => (
-          <View style={styles.networkRow}>
-            <ThemedText type="default" style={styles.ssid}>
-              {item.ip}
+        </Pressable>
+        <FlatList
+          data={devices}
+          keyExtractor={(item, index) => `${item.ip}-${item.mac}-${index}`}
+          style={styles.list}
+          contentContainerStyle={styles.listContent}
+          ListEmptyComponent={
+            <ThemedText type="small" style={styles.empty}>
+              Belum ada perangkat terhubung
             </ThemedText>
-            <ThemedText type="small" style={styles.meta}>
-              MAC {item.mac}
-            </ThemedText>
-          </View>
-        )}
-      />
+          }
+          renderItem={({ item }) => (
+            <View style={styles.networkRow}>
+              <ThemedText type="default" style={styles.ssid}>
+                {item.ip}
+              </ThemedText>
+              <ThemedText type="small" style={styles.meta}>
+                MAC {item.mac}
+              </ThemedText>
+            </View>
+          )}
+        />
+      </View>
     );
   }
 }
