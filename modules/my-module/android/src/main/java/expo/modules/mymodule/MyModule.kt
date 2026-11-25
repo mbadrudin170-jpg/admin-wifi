@@ -8,7 +8,7 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.net.ConnectivityManager
-import android.net.Inet4Address
+import java.net.Inet4Address
 import android.net.LinkProperties
 import android.net.NetworkCapabilities
 import android.net.wifi.WifiManager
@@ -271,9 +271,11 @@ class MyModule : Module() {
               "sumber" to sumber
             )
           )
-          android.util.Log.d(
-            "MyModule",
-            "Perangkat ditemukan [$sumber]: $ip $normalizedMac"
+          nativeLog(
+            "DEBUG",
+            "getConnectedDevices",
+            "Perangkat ditemukan",
+            mapOf("sumber" to sumber, "ip" to ip, "mac" to normalizedMac)
           )
         }
       }
@@ -333,9 +335,16 @@ class MyModule : Module() {
         ?.gateway
         ?.hostAddress
 
-      android.util.Log.d(
-        "MyModule",
-        "Wi-Fi aktif: iface=$iface ip=$ipv4 prefix=$prefixLength gateway=$gateway"
+      nativeLog(
+        "INFO",
+        "getConnectedDevices",
+        "Wi-Fi aktif",
+        mapOf(
+          "iface" to (iface ?: ""),
+          "ip" to ipv4.toString(),
+          "prefix" to prefixLength,
+          "gateway" to (gateway ?: "")
+        )
       )
 
       // Neighbor table sebagai sumber utama.
@@ -346,11 +355,18 @@ class MyModule : Module() {
             parseNeighborLine(it, iface)
           }
           process.waitFor()
-          android.util.Log.d("MyModule", "Neighbor selesai: ${cmd.joinToString(" ")}")
+          nativeLog(
+            "DEBUG",
+            "getConnectedDevices",
+            "Neighbor selesai",
+            mapOf("command" to cmd.joinToString(" "))
+          )
         } catch (e: Exception) {
-          android.util.Log.w(
-            "MyModule",
-            "Gagal menjalankan ${cmd.joinToString(" ")}: ${e.message}"
+          nativeLog(
+            "WARN",
+            "getConnectedDevices",
+            "Gagal menjalankan neighbor",
+            mapOf("command" to cmd.joinToString(" "), "error" to (e.message ?: ""))
           )
         }
       }
@@ -375,9 +391,11 @@ class MyModule : Module() {
         val totalHosts = (lastHost - firstHost + 1).coerceAtLeast(0)
         val hostCount = totalHosts.coerceAtMost(1024)
 
-        android.util.Log.d(
-          "MyModule",
-          "Ping sweep: $hostCount host (dari $totalHosts), prefix=$prefixLength"
+        nativeLog(
+          "DEBUG",
+          "getConnectedDevices",
+          "Ping sweep",
+          mapOf("hostCount" to hostCount, "totalHosts" to totalHosts, "prefix" to prefixLength)
         )
 
         if (hostCount > 0) {
@@ -404,13 +422,8 @@ class MyModule : Module() {
           )
         }
       } catch (e: Exception) {
-        android.util.Log.w("MyModule", "Ping sweep gagal: ${e.message}")
+        nativeLog("WARN", "getConnectedDevices", "Ping sweep gagal", mapOf("error" to (e.message ?: "")))
       }
-
-      android.util.Log.d(
-        "MyModule",
-        "getConnectedDevices selesai: ${devices.size} perangkat ditemukan"
-      )
 
       nativeLog("INFO", "getConnectedDevices", "Discovery selesai", mapOf("jumlahPerangkat" to devices.size))
       devices
@@ -424,8 +437,8 @@ class MyModule : Module() {
     AsyncFunction("scanWifi") {
       val startedAt = SystemClock.elapsedRealtime()
       nativeLog("INFO", "scanWifi", "Fungsi dipanggil")
-
-      val context = appContext.reactContext?.applicationContext
+      try {
+        val context = appContext.reactContext?.applicationContext
         ?: throw IllegalStateException("React context tidak tersedia")
 
       checkLocationPermission(context)
@@ -456,12 +469,18 @@ class MyModule : Module() {
       )
 
       mapOf(
+        "started" to started,
         "message" to if (started) {
           "Permintaan pemindaian berhasil dikirim"
         } else {
           "Pemindaian ditolak atau dibatasi Android"
         }
-      )
+      ) } catch (error: Exception) {
+        nativeLog("ERROR", "scanWifi", "Pemindaian gagal", error = error)
+        throw error
+      } finally {
+        nativeLog("DEBUG", "scanWifi", "Fungsi selesai", mapOf("durasiMs" to (SystemClock.elapsedRealtime() - startedAt)))
+      }
     }
   }
 }

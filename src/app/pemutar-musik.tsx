@@ -18,6 +18,7 @@ import { Colors, Spacing } from '@/constants/theme';
 const globalAudio = globalThis as {
   __audioPlayerGlobal?: ReturnType<typeof createAudioPlayer>;
   __audioIdGlobal?: string | null;
+  __idDimuat?: string | null;
 };
 
 type PlaylistItem = { id: string; filename: string; duration: number };
@@ -26,7 +27,6 @@ const globalPlaylist = globalThis as {
   __playlist?: PlaylistItem[];
   __playlistIndex?: number;
 };
-
 export function setPlaylist(items: PlaylistItem[], index: number) {
   globalPlaylist.__playlist = items;
   globalPlaylist.__playlistIndex = index;
@@ -57,6 +57,14 @@ function getIdGlobal() {
 
 function setIdGlobal(value: string | null) {
   globalAudio.__audioIdGlobal = value;
+}
+
+function getIdDimuat() {
+  return globalAudio.__idDimuat ?? null;
+}
+
+function setIdDimuat(value: string | null) {
+  globalAudio.__idDimuat = value;
 }
 
 type LirikBaris = { waktu: number; teks: string };
@@ -95,8 +103,12 @@ export default function PemutarMusik() {
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
   const { id, judul } = useLocalSearchParams<{ id?: string; judul?: string }>();
-  const [judulAktif, setJudulAktif] = useState(judul ?? 'Pemutar Musik');
-  const idDimuatRef = useRef<string | null>(null);
+  const playlistAwal = getPlaylist();
+  const indeksAwal = getPlaylistIndex();
+  const laguAwal = playlistAwal[indeksAwal];
+  const [judulAktif, setJudulAktif] = useState(
+    laguAwal?.filename ?? judul ?? 'Pemutar Musik',
+  );
   const player = dapatkanPlayer();
   const status = useAudioPlayerStatus(player);
   const [lebarProgress, setLebarProgress] = useState(0);
@@ -121,10 +133,10 @@ export default function PemutarMusik() {
     let aktif = true;
 
     const muatSumber = async () => {
-      if (!id || id === idDimuatRef.current) {
+      if (!id || id === getIdDimuat()) {
         console.log('PemutarMusik: sumber tidak dimuat ulang', {
           id,
-          idDimuat: idDimuatRef.current,
+          idDimuat: getIdDimuat(),
         });
         return;
       }
@@ -135,7 +147,7 @@ export default function PemutarMusik() {
         player.pause();
         player.replace(info.uri);
         setIdGlobal(id);
-        idDimuatRef.current = id;
+        setIdDimuat(id);
         player.setActiveForLockScreen(true, { title: judul ?? 'Musik' });
         player.play();
         console.log('PemutarMusik: mulai putar');
@@ -145,7 +157,6 @@ export default function PemutarMusik() {
     };
 
     void muatSumber();
-
     return () => {
       aktif = false;
     };
@@ -311,10 +322,10 @@ export default function PemutarMusik() {
 
     const berikut = daftar[indeksBerikut];
     setPlaylistIndex(indeksBerikut);
-    setJudulAktif(berikut.filename);
 
     let aktif = true;
     const muat = async () => {
+      setJudulAktif(berikut.filename);
       const info = await new MediaLibrary.Asset(berikut.id).getInfo();
       if (aktif && info?.uri) {
         player.pause();
