@@ -20,7 +20,8 @@
       "predictiveBackGestureEnabled": false,
       "package": "com.bsmcoc1.adminwifi",
       "permissions": [
-        "android.permission.ACCESS_FINE_LOCATION"
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.READ_MEDIA_AUDIO"
       ]
     },
     "web": {
@@ -38,6 +39,7 @@
         }
       ],
       "expo-sqlite",
+      "expo-media-library",
       [
         "expo-build-properties",
         {
