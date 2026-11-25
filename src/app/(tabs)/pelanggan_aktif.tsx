@@ -62,8 +62,14 @@ export default function PelangganAktifScreen() {
           <View
             style={{
               padding: 12,
-              borderBottomWidth: 1,
-              borderBottomColor: "#eee"
+              marginVertical: 2,
+              borderRadius: 12,
+              backgroundColor: "#fff",
+              elevation: 2, // Android shadow
+              shadowColor: "#000", // iOS shadow
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.1,
+              shadowRadius: 2
             }}
           >
             <Text>{item.nama}</Text>
