@@ -34,8 +34,9 @@ export default function PelangganAktifScreen() {
         </Text>
       </View>
 
-      <View style={{ flex: 1, backgroundColor: "#fff" }}></View>
-      <ListPelangganAktif />
+      <View style={{ flex: 1, backgroundColor: "#fff" }}>
+        <ListPelangganAktif />
+      </View>
       <Pressable
         onPress={() => {
           router.push("/form_pelanggan_aktif");
