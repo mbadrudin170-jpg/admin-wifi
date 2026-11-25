@@ -3,7 +3,10 @@ import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import * as Location from 'expo-location';
 
 import MyModule from '../../../modules/my-module/src/MyModule';
-import type { WifiNetwork } from '../../../modules/my-module/src/MyModule.types';
+import type {
+  WifiNetwork,
+  ConnectedDevice,
+} from '../../../modules/my-module/src/MyModule.types';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -17,6 +20,7 @@ enum Tampilan {
 
 export default function ContohScreen() {
   const [networks, setNetworks] = useState<WifiNetwork[]>([]);
+  const [devices, setDevices] = useState<ConnectedDevice[]>([]);
   const [status, setStatus] = useState<string>('Belum dipindai');
   const [scanning, setScanning] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -25,6 +29,7 @@ export default function ContohScreen() {
 
   useEffect(() => {
     const subscription = MyModule.addListener('onScanResults', (event: any) => {
+      console.log('onScanResults', event);
       setStatus(event.message);
       if (event.success) {
         setNetworks(event.networks);
@@ -75,6 +80,27 @@ export default function ContohScreen() {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (tampilan !== Tampilan.perangkat) return;
+    let aktif = true;
+    const muat = async () => {
+      try {
+        const hasil = await MyModule.getConnectedDevices();
+        console.log('getConnectedDevices', hasil);
+        if (aktif) setDevices(hasil);
+      } catch (error) {
+        if (aktif)
+          setStatus(
+            error instanceof Error ? error.message : 'Gagal memuat perangkat',
+          );
+      }
+    };
+    void muat();
+    return () => {
+      aktif = false;
+    };
+  }, [tampilan]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -152,7 +178,7 @@ export default function ContohScreen() {
           {status}
         </ThemedText>
 
-        <ListWIfi />
+        {tampilan === Tampilan.wifi ? <ListWIfi /> : <ListPerangkat />}
 
         <ThemedText type="small" style={styles.footer}>
           Dibuat dengan Expo + TypeScript + React Native
@@ -183,6 +209,31 @@ export default function ContohScreen() {
             </ThemedText>
             <ThemedText type="small" style={styles.meta}>
               {item.bssid}
+            </ThemedText>
+          </View>
+        )}
+      />
+    );
+  }
+  function ListPerangkat() {
+    return (
+      <FlatList
+        data={devices}
+        keyExtractor={(item, index) => `${item.ip}-${item.mac}-${index}`}
+        style={styles.list}
+        contentContainerStyle={styles.listContent}
+        ListEmptyComponent={
+          <ThemedText type="small" style={styles.empty}>
+            Belum ada perangkat terhubung
+          </ThemedText>
+        }
+        renderItem={({ item }) => (
+          <View style={styles.networkRow}>
+            <ThemedText type="default" style={styles.ssid}>
+              {item.ip}
+            </ThemedText>
+            <ThemedText type="small" style={styles.meta}>
+              MAC {item.mac}
             </ThemedText>
           </View>
         )}
