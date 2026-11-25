@@ -1,6 +1,6 @@
-import { db } from "./database";
+import { db } from './database';
 
-import { v4 as uuidv4 } from "uuid";
+import { v4 as uuidv4 } from 'uuid';
 
 export type PelangganAktif = {
   id: string;
@@ -14,18 +14,23 @@ export type PelangganAktifBaru = {
 };
 
 export function getAllPelangganAktif(): PelangganAktif[] {
-  return db.getAllSync<PelangganAktif>("SELECT * FROM pelanggan_aktif ORDER BY created_at DESC");
+  return db.getAllSync<PelangganAktif>(
+    'SELECT * FROM pelanggan_aktif ORDER BY created_at DESC',
+  );
 }
 
 export function addPelangganAktif(data: PelangganAktifBaru): void {
   const id = uuidv4();
-  db.runSync("INSERT INTO pelanggan_aktif (id, nama) VALUES (?, ?)", [id, data.nama]);
+  db.runSync('INSERT INTO pelanggan_aktif (id, nama) VALUES (?, ?)', [
+    id,
+    data.nama,
+  ]);
 }
 
 export function updatePelangganAktif(id: number, nama: string): void {
-  db.runSync("UPDATE pelanggan_aktif SET nama = ? WHERE id = ?", [nama, id]);
+  db.runSync('UPDATE pelanggan_aktif SET nama = ? WHERE id = ?', [nama, id]);
 }
 
 export function deletePelangganAktif(id: number): void {
-  db.runSync("DELETE FROM pelanggan_aktif WHERE id = ?", [id]);
+  db.runSync('DELETE FROM pelanggan_aktif WHERE id = ?', [id]);
 }
