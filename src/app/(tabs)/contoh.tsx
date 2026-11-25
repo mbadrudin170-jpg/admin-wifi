@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FlatList, StyleSheet, View } from "react-native";
 import * as Location from "expo-location";
 
@@ -12,19 +12,34 @@ export default function ContohScreen() {
   const [networks, setNetworks] = useState<WifiNetwork[]>([]);
   const [status, setStatus] = useState<string>('Belum dipindai');
   const [scanning, setScanning] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     const subscription = MyModule.addListener('onScanResults', (event: any) => {
-      setScanning(false);
       setStatus(event.message);
       if (event.success) {
         setNetworks(event.networks);
       }
     });
-    return () => subscription.remove();
+    return () => {
+      subscription.remove();
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
   }, []);
 
-  const handleScan = async () => {
+  const runScan = async () => {
+    try {
+      const result = await MyModule.scanWifi();
+      setStatus(result.message);
+      if (!result.started) {
+        // native tidak memulai scan; tetap coba lagi di interval berikutnya
+      }
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Gagal memindai");
+    }
+  };
+
+  const startScan = async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== "granted") {
       setStatus("Izin lokasi ditolak");
@@ -32,15 +47,24 @@ export default function ContohScreen() {
     }
     setScanning(true);
     setStatus("Memindai...");
-    try {
-      const result = await MyModule.scanWifi();
-      setStatus(result.message);
-      if (!result.started) {
-        setScanning(false);
-      }
-    } catch (error) {
-      setScanning(false);
-      setStatus(error instanceof Error ? error.message : "Gagal memindai");
+    await runScan();
+    intervalRef.current = setInterval(runScan, 30 * 60 * 1000);
+  };
+
+  const stopScan = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    setScanning(false);
+    setStatus("Pemindaian dihentikan");
+  };
+
+  const handleScan = () => {
+    if (scanning) {
+      stopScan();
+    } else {
+      void startScan();
     }
   };
 
@@ -60,7 +84,7 @@ export default function ContohScreen() {
           onTouchEnd={scanning ? undefined : handleScan}
         >
           <ThemedText type="default" style={styles.buttonText}>
-            {scanning ? 'Memindai...' : 'Pindai Wi-Fi'}
+            {scanning ? 'Hentikan Pemindaian' : 'Pindai Wi-Fi'}
           </ThemedText>
         </ThemedView>
 
