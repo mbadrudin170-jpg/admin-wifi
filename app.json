@@ -19,7 +19,9 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.bsmcoc1.adminwifi",
-      "permissions": ["android.permission.ACCESS_FINE_LOCATION"]
+      "permissions": [
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "output": "server",
@@ -40,12 +42,16 @@
         "expo-build-properties",
         {
           "android": {
-            "buildArchs": ["armeabi-v7a", "arm64-v8a"],
+            "buildArchs": [
+              "armeabi-v7a",
+              "arm64-v8a"
+            ],
             "enableMinifyInReleaseBuilds": true,
             "enableShrinkResourcesInReleaseBuilds": true
           }
         }
-      ]
+      ],
+      "expo-audio"
     ],
     "experiments": {
       "typedRoutes": true,
