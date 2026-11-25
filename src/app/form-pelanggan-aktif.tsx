@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button, StyleSheet, TextInput, View } from "react-native";
 
-import { usePelangganAktifStore } from "@/store/pelangganAktifStore";
+import { usePelangganAktifStore } from "@/store/pelanggan-aktif-store";
 import { router } from "expo-router";
 
 export default function FormPelangganAktifScreen() {

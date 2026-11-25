@@ -39,7 +39,7 @@ export default function AppTabs() {
         />
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="pelanggan_aktif">
+      <NativeTabs.Trigger name="pelanggan-aktif">
         <NativeTabs.Trigger.Label>Pelanggan Aktif</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           src={<NativeTabs.Trigger.VectorIcon family={MaterialIcons} name="people" />}

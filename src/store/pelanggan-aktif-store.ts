@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-import { addPelangganAktif, getAllPelangganAktif, PelangganAktif } from "@/db/pelangganAktif";
+import { addPelangganAktif, getAllPelangganAktif, PelangganAktif } from "@/db/pelanggan-aktif";
 
 type State = {
   items: PelangganAktif[];

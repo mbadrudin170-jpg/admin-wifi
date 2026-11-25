@@ -6,7 +6,7 @@ import {
   useSafeAreaInsets
 } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { usePelangganAktifStore } from "@/store/pelangganAktifStore";
+import { usePelangganAktifStore } from "@/store/pelanggan-aktif-store";
 
 export default function PelangganAktifScreen() {
   const insets = useSafeAreaInsets();
@@ -37,7 +37,7 @@ export default function PelangganAktifScreen() {
 
       <Pressable
         onPress={() => {
-          router.push("/form_pelanggan_aktif");
+          router.push("/form-pelanggan-aktif");
         }}
         style={{
           padding: 12,

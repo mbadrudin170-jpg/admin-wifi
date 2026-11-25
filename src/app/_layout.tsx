@@ -8,7 +8,7 @@ export default function RootLayout() {
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
-          name="form_pelanggan_aktif"
+          name="form-pelanggan-aktif"
           options={{ title: "Form Pelanggan Aktif" }}
         />
       </Stack>
