@@ -1,12 +1,12 @@
-import { useEffect } from "react";
-import { Pressable, Text, View } from "react-native";
-import { FlatList } from "react-native";
+import { useEffect } from 'react';
+import { Pressable, Text, View } from 'react-native';
+import { FlatList } from 'react-native';
 import {
   SafeAreaView,
-  useSafeAreaInsets
-} from "react-native-safe-area-context";
-import { router } from "expo-router";
-import { usePelangganAktifStore } from "@/store/pelanggan-aktif-store";
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import { usePelangganAktifStore } from '@/store/pelanggan-aktif-store';
 
 export default function PelangganAktifScreen() {
   const insets = useSafeAreaInsets();
@@ -18,17 +18,17 @@ export default function PelangganAktifScreen() {
   }, [load]);
 
   return (
-    <SafeAreaView edges={["left", "right", "bottom"]} style={{ flex: 1 }}>
+    <SafeAreaView edges={['left', 'right', 'bottom']} style={{ flex: 1 }}>
       <View
         style={{
           paddingTop: insets.top,
           height: 56 + insets.top,
-          backgroundColor: "#208AEF",
-          justifyContent: "center",
-          paddingHorizontal: 16
+          backgroundColor: '#208AEF',
+          justifyContent: 'center',
+          paddingHorizontal: 16,
         }}
       >
-        <Text style={{ color: "#fff", fontSize: 18, fontWeight: "600" }}>
+        <Text style={{ color: '#fff', fontSize: 18, fontWeight: '600' }}>
           Pelanggan Aktif
         </Text>
       </View>
@@ -37,17 +37,17 @@ export default function PelangganAktifScreen() {
 
       <Pressable
         onPress={() => {
-          console.log("ok");
-          router.push("/form-pelanggan-aktif");
+          console.log('ok');
+          router.push('/form-pelanggan-aktif');
         }}
         style={{
           padding: 12,
-          backgroundColor: "#208AEF",
+          backgroundColor: '#208AEF',
           borderRadius: 8,
-          margin: 12
+          margin: 12,
         }}
       >
-        <Text style={{ color: "#fff" }}>Tombol</Text>
+        <Text style={{ color: '#fff' }}>Tombol</Text>
       </Pressable>
     </SafeAreaView>
   );
@@ -65,12 +65,12 @@ export default function PelangganAktifScreen() {
               padding: 12,
               marginVertical: 2,
               borderRadius: 12,
-              backgroundColor: "#fff",
+              backgroundColor: '#fff',
               elevation: 2, // Android shadow
-              shadowColor: "#000", // iOS shadow
+              shadowColor: '#000', // iOS shadow
               shadowOffset: { width: 0, height: 1 },
               shadowOpacity: 0.1,
-              shadowRadius: 2
+              shadowRadius: 2,
             }}
           >
             <Text>{item.nama}</Text>
