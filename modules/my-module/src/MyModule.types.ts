@@ -4,6 +4,23 @@ export type ConnectedDevice = {
   sumber?: string;
 };
 
+export type NativeLogLevel =
+  | 'VERBOSE'
+  | 'DEBUG'
+  | 'INFO'
+  | 'WARN'
+  | 'ERROR';
+
+export type NativeLogEvent = {
+  level: NativeLogLevel;
+  tag: string;
+  function: string;
+  message: string;
+  timestamp: number;
+  details?: Record<string, string | number | boolean | null>;
+  error?: string;
+};
+
 export type WifiNetwork = {
   ssid: string;
   bssid: string;
@@ -26,4 +43,5 @@ export type WifiScanEvent = {
 
 export type MyModuleEvents = {
   onScanResults: (event: WifiScanEvent) => void;
+  onNativeLog: (event: NativeLogEvent) => void;
 };

@@ -7,9 +7,15 @@ import type {
   ConnectedDevice,
 } from './MyModule.types';
 
-let nativeModule: any = null;
+declare class MyModuleNative extends NativeModule<MyModuleEvents> {
+  scanWifi(): Promise<ScanResponse>;
+
+  getConnectedDevices(): Promise<ConnectedDevice[]>;
+}
+
+let nativeModule: MyModuleNative | null = null;
 try {
-  nativeModule = requireOptionalNativeModule('MyModule');
+  nativeModule = requireOptionalNativeModule<MyModuleNative>('MyModule');
 } catch {
   nativeModule = null;
 }
@@ -24,15 +30,11 @@ const fallback = {
   async getConnectedDevices(): Promise<ConnectedDevice[]> {
     throw new Error('Modul native tidak tersedia (gunakan development build).');
   },
-  addListener: (_event: string, _cb: (e: WifiScanEvent) => void) => ({
+  addListener: (_event: string, _cb: (e: any) => void) => ({
     remove: () => {},
   }),
 };
 
 export const isNativeAvailable = nativeModule != null;
 
-export default (nativeModule ?? fallback) as {
-  scanWifi: () => Promise<ScanResponse>;
-  getConnectedDevices: () => Promise<ConnectedDevice[]>;
-  addListener: (event: string, cb: (e: WifiScanEvent) => void) => { remove: () => void };
-};
+export default (nativeModule ?? fallback) as MyModuleNative;

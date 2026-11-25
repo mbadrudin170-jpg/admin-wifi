@@ -74,7 +74,6 @@ export default function PemutarMusik() {
   const player = dapatkanPlayer();
   const status = useAudioPlayerStatus(player);
   const [lebarProgress, setLebarProgress] = useState(0);
-  const [tinggiScroll, setTinggiScroll] = useState(0);
 
   const scrollRef = useRef<any>(null);
   const lineMetrics = useRef<{ y: number; height: number }[]>([]);

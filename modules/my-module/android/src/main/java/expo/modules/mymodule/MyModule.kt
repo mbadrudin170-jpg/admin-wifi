@@ -13,10 +13,63 @@ import android.net.LinkProperties
 import android.net.NetworkCapabilities
 import android.net.wifi.WifiManager
 import android.os.Build
+import android.os.SystemClock
+import android.util.Log
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
 class MyModule : Module() {
+
+  private companion object {
+    const val LOG_TAG = "MyModule"
+    const val LOG_EVENT = "onNativeLog"
+  }
+
+  private fun nativeLog(
+    level: String,
+    function: String,
+    message: String,
+    details: Map<String, Any?> = emptyMap(),
+    error: Throwable? = null
+  ) {
+    val formatted = "[$function] $message"
+
+    when (level) {
+      "VERBOSE" -> Log.v(LOG_TAG, formatted)
+      "DEBUG" -> Log.d(LOG_TAG, formatted)
+      "INFO" -> Log.i(LOG_TAG, formatted)
+      "WARN" -> Log.w(LOG_TAG, formatted)
+      "ERROR" -> {
+        if (error != null) {
+          Log.e(LOG_TAG, formatted, error)
+        } else {
+          Log.e(LOG_TAG, formatted)
+        }
+      }
+    }
+
+    val payload = mutableMapOf<String, Any?>(
+      "level" to level,
+      "tag" to LOG_TAG,
+      "function" to function,
+      "message" to message,
+      "timestamp" to System.currentTimeMillis()
+    )
+
+    if (details.isNotEmpty()) {
+      payload["details"] = details
+    }
+
+    if (error != null) {
+      payload["error"] = error.toString()
+    }
+
+    try {
+      sendEvent(LOG_EVENT, payload)
+    } catch (exception: Exception) {
+      Log.w(LOG_TAG, "Gagal meneruskan log ke JavaScript", exception)
+    }
+  }
 
   private var scanReceiver: BroadcastReceiver? = null
   private var receiverContext: Context? = null
@@ -178,7 +231,7 @@ class MyModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("MyModule")
 
-    Events("onScanResults")
+    Events("onScanResults", "onNativeLog")
 
     OnStartObserving("onScanResults") {
       registerScanReceiver()
@@ -193,6 +246,9 @@ class MyModule : Module() {
     }
 
     AsyncFunction("getConnectedDevices") {
+      val startedAt = SystemClock.elapsedRealtime()
+      nativeLog("INFO", "getConnectedDevices", "Fungsi dipanggil")
+      try {
       val devices = mutableListOf<Map<String, Any?>>()
       val seen = mutableSetOf<String>()
 
@@ -356,9 +412,19 @@ class MyModule : Module() {
         "getConnectedDevices selesai: ${devices.size} perangkat ditemukan"
       )
 
-      return@AsyncFunction devices
+      nativeLog("INFO", "getConnectedDevices", "Discovery selesai", mapOf("jumlahPerangkat" to devices.size))
+      devices
+    } catch (error: Exception) {
+      nativeLog("ERROR", "getConnectedDevices", "Discovery gagal", error = error)
+      throw error
+    } finally {
+      nativeLog("DEBUG", "getConnectedDevices", "Fungsi selesai", mapOf("durasiMs" to (SystemClock.elapsedRealtime() - startedAt)))
+    }
     }
     AsyncFunction("scanWifi") {
+      val startedAt = SystemClock.elapsedRealtime()
+      nativeLog("INFO", "scanWifi", "Fungsi dipanggil")
+
       val context = appContext.reactContext?.applicationContext
         ?: throw IllegalStateException("React context tidak tersedia")
 
@@ -382,8 +448,14 @@ class MyModule : Module() {
       @Suppress("DEPRECATION")
       val started = wifiManager.startScan()
 
+      nativeLog(
+        "INFO",
+        "scanWifi",
+        "Permintaan pemindaian dikirim",
+        mapOf("started" to started)
+      )
+
       mapOf(
-        "started" to started,
         "message" to if (started) {
           "Permintaan pemindaian berhasil dikirim"
         } else {
