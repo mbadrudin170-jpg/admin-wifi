@@ -54,9 +54,7 @@ const cariCover = async (namaFile: string): Promise<string | undefined> => {
     }
     track = track.replace(/\([^)]*\)/g, '').trim();
 
-    const term = encodeURIComponent(
-      [artist, track].filter(Boolean).join(' '),
-    );
+    const term = encodeURIComponent([artist, track].filter(Boolean).join(' '));
     const res = await fetch(
       `https://itunes.apple.com/search?term=${term}&media=music&limit=1`,
     );
@@ -138,6 +136,7 @@ export const usePlayerStore = create<PlayerState>((set) => ({
       state._setLibraryLoading(false);
     }
   },
+
   loadMoreLibrary: async () => {
     const state = usePlayerStore.getState();
     if (state.isLoadingLibrary || !state.hasPermission) return;
