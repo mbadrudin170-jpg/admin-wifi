@@ -17,6 +17,7 @@ import {
   useAudioPlayerStatus,
 } from 'expo-audio';
 
+import { Image } from 'expo-image';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import {
@@ -117,6 +118,7 @@ export default function PemutarMusik() {
   const [judulAktif, setJudulAktif] = useState(
     laguAwal?.filename ?? judul ?? 'Pemutar Musik',
   );
+  const [coverUri, setCoverUri] = useState<string | null>(null);
   const player = dapatkanPlayer();
   const insets = useSafeAreaInsets();
   const status = useAudioPlayerStatus(player);
@@ -290,6 +292,54 @@ export default function PemutarMusik() {
   }, [judulAktif]);
 
   useEffect(() => {
+    let aktif = true;
+
+    const muatCover = async () => {
+      if (!judulAktif) {
+        if (aktif) setCoverUri(null);
+        return;
+      }
+      try {
+        const namaBersih = (judulAktif ?? '')
+          .replace(/\.[^.]+$/, '')
+          .replace(/_\d+$/, '')
+          .replace(/[_]+/g, ' ')
+          .trim();
+        const kueri = namaBersih || judul || '';
+        const parts = kueri.split(' - ');
+        let track = kueri;
+        let artist = '';
+        if (parts.length >= 2) {
+          artist = parts[0].trim();
+          track = parts.slice(1).join(' - ').trim();
+        }
+        track = track.replace(/\([^)]*\)/g, '').trim();
+
+        const term = encodeURIComponent([artist, track].filter(Boolean).join(' '));
+        const res = await fetch(
+          `https://itunes.apple.com/search?term=${term}&media=music&limit=1`,
+        );
+        if (!res.ok) throw new Error('Gagal memuat cover');
+        const data = await res.json();
+        const item = Array.isArray(data?.results) ? data.results[0] : null;
+        const url =
+          (typeof item?.artworkUrl100 === 'string'
+            ? item.artworkUrl100.replace('100x100bb', '600x600bb')
+            : null) ?? null;
+        if (aktif) setCoverUri(url);
+      } catch (e) {
+        console.log('PemutarMusik: gagal memuat cover', e);
+        if (aktif) setCoverUri(null);
+      }
+    };
+
+    void muatCover();
+    return () => {
+      aktif = false;
+    };
+  }, [judulAktif]);
+
+  useEffect(() => {
     lineMetrics.current = new Array(lirik.length)
       .fill(null)
       .map(() => ({ y: 0, height: 0 }));
@@ -370,9 +420,17 @@ export default function PemutarMusik() {
           <ThemedText>Pemutar Musik</ThemedText>
         </AppBar>
 
-        <View style={styles.artwork}>
-          <ThemedText style={styles.artworkIcon}>♪</ThemedText>
-        </View>
+        {coverUri ? (
+          <Image
+            source={{ uri: coverUri }}
+            style={styles.artwork}
+            contentFit="cover"
+          />
+        ) : (
+          <View style={styles.artwork}>
+            <ThemedText style={styles.artworkIcon}>♪</ThemedText>
+          </View>
+        )}
 
         <ThemedText type="title" style={styles.judul} numberOfLines={2}>
           {judulAktif}
