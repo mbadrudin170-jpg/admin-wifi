@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import Slider from '@react-native-community/slider';
 import {
   Button,
   FlatList,
@@ -393,6 +394,16 @@ export default function PemutarMusik() {
         </ThemedText>
 
         <View style={styles.progressWrap}>
+          <Slider
+            minimumValue={0}
+            maximumValue={status.duration || 1}
+            value={status.currentTime}
+            onSlidingComplete={(value) => {
+              player.seekTo(value);
+            }}
+            minimumTrackTintColor="#1DB954"
+            maximumTrackTintColor="#777777"
+          />{' '}
           <Pressable
             style={[
               styles.progressTrack,
@@ -408,7 +419,6 @@ export default function PemutarMusik() {
               ]}
             />
           </Pressable>
-
           <View style={styles.waktuRow}>
             <ThemedText type="small">
               {formatWaktu(status.currentTime)}
