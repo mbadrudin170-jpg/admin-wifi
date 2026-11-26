@@ -6,6 +6,7 @@ type OverlayState = {
   children: ReactNode | null;
   show: (children: ReactNode) => void;
   hide: () => void;
+  setVisible: (v: boolean) => void;
 };
 
 export const useOverlayStore = create<OverlayState>((set) => ({
@@ -13,4 +14,5 @@ export const useOverlayStore = create<OverlayState>((set) => ({
   children: null,
   show: (children) => set({ visible: true, children }),
   hide: () => set({ visible: false, children: null }),
+  setVisible: (v) => set({ visible: v }),
 }));

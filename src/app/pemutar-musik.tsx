@@ -15,6 +15,7 @@ import AppBar from '@/components/app-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, Spacing } from '@/constants/theme';
+import { useOverlayStore } from '@/store/overlay-store';
 import {
   getIdDimuatStore,
   getOrCreateAudioPlayer,
@@ -31,7 +32,6 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
-
 export { setPlaylist } from '@/store/player-store';
 export type { PlaylistItem } from '@/store/player-store';
 
@@ -129,6 +129,10 @@ export default function PemutarMusik() {
       shouldPlayInBackground: true,
       interruptionMode: 'doNotMix',
     });
+  }, []);
+
+  useEffect(() => {
+    useOverlayStore.getState().setVisible(false);
   }, []);
 
   const idAktif = playlist[index]?.id;
@@ -399,7 +403,12 @@ export default function PemutarMusik() {
     <SafeAreaView style={styles.safeArea} edges={['bottom', 'left', 'right']}>
       <ThemedView style={styles.container}>
         <AppBar style={{ paddingTop: insets.top }}>
-          <Pressable onPress={() => router.back()}>
+          <Pressable
+            onPress={() => {
+              router.back();
+              useOverlayStore.getState().setVisible(true);
+            }}
+          >
             <MaterialIcons name="arrow-back" size={24} color="#010000" />
           </Pressable>
           <ThemedText>Pemutar Musik</ThemedText>

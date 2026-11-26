@@ -56,6 +56,14 @@ jobs:
           ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
           NODE_ENV: development
 
+      - name: Rename APK
+        run: |
+          APK_PATH=$(find android/app/build/outputs/apk/debug -name "*.apk" -type f | head -1)
+          if [ -n "$APK_PATH" ]; then
+            TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+            mv "$APK_PATH" android/app/build/outputs/apk/debug/admin-wifi-debug-$TIMESTAMP.apk
+          fi
+
       - name: Locate APK
         run: find android/app/build/outputs -name "*.apk" -type f 2>/dev/null || true
 
@@ -63,6 +71,6 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: android-development-apk
-          path: android/app/build/outputs/apk/debug/*.apk
+          name: admin-wifi-debug-apk
+          path: android/app/build/outputs/apk/debug/admin-wifi-debug-*.apk
           retention-days: 7
