@@ -7,10 +7,8 @@ import * as MediaLibrary from 'expo-media-library';
 import MyModule from '../../modules/my-module/src/MyModule';
 import {
   dapatkanPlayer,
-  getPlaylist,
-  getPlaylistIndex,
-  setPlaylistIndex,
 } from './pemutar-musik';
+import { getPlaylist, getPlaylistIndex, setPlaylistIndex } from '@/store/player-store';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();

@@ -20,11 +20,12 @@ import {
 import { Image } from 'expo-image';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { getPlaylist, getPlaylistIndex, setPlaylistIndex } from '@/store/player-store';
+import { Spacing } from '@/constants/theme';
 import {
   SafeAreaView,
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
-import { Spacing } from '@/constants/theme';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import AppBar from '@/components/app-bar';
 
@@ -35,28 +36,8 @@ const globalAudio = globalThis as {
   __idDimuat?: string | null;
 };
 
-type PlaylistItem = { id: string; filename: string; duration: number };
-
-const globalPlaylist = globalThis as {
-  __playlist?: PlaylistItem[];
-  __playlistIndex?: number;
-};
-export function setPlaylist(items: PlaylistItem[], index: number) {
-  globalPlaylist.__playlist = items;
-  globalPlaylist.__playlistIndex = index;
-}
-
-export function getPlaylist() {
-  return globalPlaylist.__playlist ?? [];
-}
-
-export function getPlaylistIndex() {
-  return globalPlaylist.__playlistIndex ?? 0;
-}
-
-export function setPlaylistIndex(index: number) {
-  globalPlaylist.__playlistIndex = index;
-}
+export { setPlaylist } from '@/store/player-store';
+export type { PlaylistItem } from '@/store/player-store';
 
 export function dapatkanPlayer() {
   if (!globalAudio.__audioPlayerGlobal) {
@@ -315,7 +296,9 @@ export default function PemutarMusik() {
         }
         track = track.replace(/\([^)]*\)/g, '').trim();
 
-        const term = encodeURIComponent([artist, track].filter(Boolean).join(' '));
+        const term = encodeURIComponent(
+          [artist, track].filter(Boolean).join(' '),
+        );
         const res = await fetch(
           `https://itunes.apple.com/search?term=${term}&media=music&limit=1`,
         );
