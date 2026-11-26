@@ -105,6 +105,20 @@ export default function PemutarMusik() {
   const [pesanLirik, setPesanLirik] = useState<string | null>(null);
   const [isSliding, setIsSliding] = useState(false);
   const [nilaiSlider, setNilaiSlider] = useState(status.currentTime);
+  const pendingSeekRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (isSliding) return;
+
+    if (pendingSeekRef.current !== null) {
+      if (Math.abs(status.currentTime - pendingSeekRef.current) < 0.5) {
+        pendingSeekRef.current = null;
+      }
+      return;
+    }
+
+    setNilaiSlider(status.currentTime);
+  }, [status.currentTime, isSliding]);
   const mainkanSelanjutnya = async () => {
     const daftar = getPlaylist();
     const indeksBerikut = getPlaylistIndex() + 1;
@@ -437,16 +451,16 @@ export default function PemutarMusik() {
           <Slider
             minimumValue={0}
             maximumValue={status.duration || 1}
-            value={isSliding ? nilaiSlider : status.currentTime}
+            value={nilaiSlider}
             onSlidingStart={() => {
               setIsSliding(true);
-              setNilaiSlider(status.currentTime);
             }}
             onValueChange={(v) => {
               setNilaiSlider(v);
             }}
             onSlidingComplete={(value) => {
               setIsSliding(false);
+              pendingSeekRef.current = value;
               setNilaiSlider(value);
               player.seekTo(value);
             }}
