@@ -4,7 +4,6 @@ import * as MediaLibrary from 'expo-media-library';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
-  BackHandler,
   FlatList,
   Pressable,
   StyleSheet,
@@ -68,6 +67,28 @@ function formatWaktu(detik: number) {
   return `${menit}:${sisa.toString().padStart(2, '0')}`;
 }
 
+export const mainkanSelanjutnya = async () => {
+  const daftar = getPlaylist();
+  const player = getOrCreateAudioPlayer();
+  const indeksBerikut = getPlaylistIndex() + 1;
+  if (indeksBerikut >= daftar.length) return;
+
+  const berikut = daftar[indeksBerikut];
+  setPlaylistIndex(indeksBerikut);
+
+  try {
+    const info = await new MediaLibrary.Asset(berikut.id).getInfo();
+    if (info?.uri) {
+      player.pause();
+      player.replace(info.uri);
+      player.setActiveForLockScreen(true, { title: berikut.filename });
+      player.play();
+    }
+    console.log(info);
+  } catch (e) {
+    console.log('PemutarMusik: gagal memutar selanjutnya', e);
+  }
+};
 export default function PemutarMusik() {
   const scheme = useColorScheme();
   const iconColor = scheme === 'dark' ? Colors.dark.text : Colors.light.text;
@@ -102,27 +123,6 @@ export default function PemutarMusik() {
 
     setNilaiSlider(status.currentTime);
   }, [status.currentTime, isSliding]);
-  const mainkanSelanjutnya = async () => {
-    const daftar = getPlaylist();
-    const indeksBerikut = getPlaylistIndex() + 1;
-    if (indeksBerikut >= daftar.length) return;
-
-    const berikut = daftar[indeksBerikut];
-    setPlaylistIndex(indeksBerikut);
-
-    try {
-      const info = await new MediaLibrary.Asset(berikut.id).getInfo();
-      if (info?.uri) {
-        player.pause();
-        player.replace(info.uri);
-        player.setActiveForLockScreen(true, { title: berikut.filename });
-        player.play();
-      }
-      console.log(info);
-    } catch (e) {
-      console.log('PemutarMusik: gagal memutar selanjutnya', e);
-    }
-  };
 
   useEffect(() => {
     void setAudioModeAsync({
@@ -132,12 +132,12 @@ export default function PemutarMusik() {
     });
   }, []);
 
- useEffect(() => {
-  useOverlayStore.getState().setVisible(false);
-  return () => {
-    useOverlayStore.getState().setVisible(true);
-  };
-}, []);
+  useEffect(() => {
+    useOverlayStore.getState().setVisible(false);
+    return () => {
+      useOverlayStore.getState().setVisible(true);
+    };
+  }, []);
 
   const idAktif = playlist[index]?.id;
 
