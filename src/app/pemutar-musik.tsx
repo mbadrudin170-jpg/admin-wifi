@@ -1,7 +1,7 @@
 import Slider from '@react-native-community/slider';
 import { setAudioModeAsync, useAudioPlayerStatus } from 'expo-audio';
 import * as MediaLibrary from 'expo-media-library';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 
@@ -62,7 +62,6 @@ function formatWaktu(detik: number) {
 }
 
 export default function PemutarMusik() {
-  const { id, judul } = useLocalSearchParams<{ id?: string; judul?: string }>();
   const playlist = usePlayerStore((s) => s.playlist);
   const index = usePlayerStore((s) => s.index);
   const judulAktif = playlist[index]?.filename ?? 'Pemutar Musik';
@@ -124,26 +123,28 @@ export default function PemutarMusik() {
     });
   }, []);
 
+  const idAktif = playlist[index]?.id;
+
   useEffect(() => {
     let aktif = true;
 
     const muatSumber = async () => {
-      if (!id || id === getIdDimuatStore()) {
+      if (!idAktif || idAktif === getIdDimuatStore()) {
         console.log('PemutarMusik: sumber tidak dimuat ulang', {
-          id,
+          id: idAktif,
           idDimuat: getIdDimuatStore(),
         });
         return;
       }
-      console.log('PemutarMusik: memuat sumber audio', { id });
-      const info = await new MediaLibrary.Asset(id).getInfo();
+      console.log('PemutarMusik: memuat sumber audio', { id: idAktif });
+      const info = await new MediaLibrary.Asset(idAktif).getInfo();
       if (aktif && info?.uri) {
         console.log('PemutarMusik: URI audio ditemukan', info.uri);
         player.pause();
         player.replace(info.uri);
-        setAudioIdGlobal(id);
-        setIdDimuatStore(id);
-        player.setActiveForLockScreen(true, { title: judul ?? 'Musik' });
+        setAudioIdGlobal(idAktif);
+        setIdDimuatStore(idAktif);
+        player.setActiveForLockScreen(true, { title: judulAktif ?? 'Musik' });
         player.play();
         console.log('PemutarMusik: mulai putar');
       } else {
@@ -155,7 +156,7 @@ export default function PemutarMusik() {
     return () => {
       aktif = false;
     };
-  }, [id, player, judul]);
+  }, [idAktif, player, judulAktif]);
 
   useEffect(() => {
     let aktif = true;
@@ -174,7 +175,7 @@ export default function PemutarMusik() {
           .replace(/_\d+$/, '')
           .replace(/[_]+/g, ' ')
           .trim();
-        const kueri = namaBersih || judul || '';
+        const kueri = namaBersih || judulAktif || '';
         const parts = kueri.split(' - ');
         let track = kueri;
         let artist = '';
@@ -264,7 +265,7 @@ export default function PemutarMusik() {
     return () => {
       aktif = false;
     };
-  }, [judulAktif, judul]);
+  }, [judulAktif]);
 
   useEffect(() => {
     let aktif = true;
@@ -280,7 +281,7 @@ export default function PemutarMusik() {
           .replace(/_\d+$/, '')
           .replace(/[_]+/g, ' ')
           .trim();
-        const kueri = namaBersih || judul || '';
+        const kueri = namaBersih || judulAktif || '';
         const parts = kueri.split(' - ');
         let track = kueri;
         let artist = '';
@@ -314,7 +315,7 @@ export default function PemutarMusik() {
     return () => {
       aktif = false;
     };
-  }, [judulAktif, judul]);
+  }, [judulAktif]);
 
   useEffect(() => {
     lineMetrics.current = new Array(lirik.length)
