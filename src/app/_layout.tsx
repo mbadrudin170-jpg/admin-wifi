@@ -18,7 +18,6 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { Pressable, useColorScheme, View } from 'react-native';
 import { PaperProvider, Portal } from 'react-native-paper';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import MyModule from '../../modules/my-module/src/MyModule';
 import { mainkanSelanjutnya } from './pemutar-musik';
 
@@ -97,91 +96,86 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
-      <SafeAreaView>
-        <PaperProvider>
-          <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen
-              name="pemutar-musik"
-              options={{ headerShown: false }}
-            />
-            <Stack.Screen
-              name="form-pelanggan-aktif"
-              options={{ title: 'Form Pelanggan Aktif' }}
-            />
-          </Stack>
+      <PaperProvider>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="pemutar-musik" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="form-pelanggan-aktif"
+            options={{ title: 'Form Pelanggan Aktif' }}
+          />
+        </Stack>
 
-          <Portal>
-            {overlayVisible && (
-              <View
-                pointerEvents="box-none"
+        <Portal>
+          {overlayVisible && (
+            <View
+              pointerEvents="box-none"
+              style={{
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                bottom: 0,
+                left: 0,
+                justifyContent: 'flex-end', // <- diubah dari 'center'
+                alignItems: 'center', // tetap tengah horizontal
+                paddingBottom: 120,
+              }}
+            >
+              <ThemedView
                 style={{
-                  position: 'absolute',
-                  top: 0,
-                  right: 0,
-                  bottom: 0,
-                  left: 0,
-                  justifyContent: 'flex-end', // <- diubah dari 'center'
-                  alignItems: 'center', // tetap tengah horizontal
-                  paddingBottom: 120,
+                  borderRadius: 12,
+                  justifyContent: 'space-between',
+                  flexDirection: 'row',
+                  width: '100%',
+                  paddingHorizontal: 20,
+                  paddingVertical: 12,
                 }}
               >
-                <ThemedView
-                  style={{
-                    borderRadius: 12,
-                    justifyContent: 'space-between',
-                    flexDirection: 'row',
-                    width: '100%',
-                    paddingHorizontal: 20,
-                    paddingVertical: 12,
-                  }}
-                >
-                  <ThemedText style={{ flex: 1 }}>
-                    {playlist[index]?.filename ?? 'Pemutar Musik'}
-                  </ThemedText>
+                <ThemedText style={{ flex: 1 }}>
+                  {playlist[index]?.filename ?? 'Pemutar Musik'}
+                </ThemedText>
 
-                  <ThemedView style={{ flexDirection: 'row', gap: 8 }}>
-                    <Pressable>
-                      <MaterialIcons
-                        name="skip-previous"
-                        size={24}
-                        color={iconColor}
-                      />
-                    </Pressable>
-                    <Pressable
-                      onPress={() => {
-                        console.log(
-                          'PemutarMusik: tombol',
-                          status.playing ? 'Jeda' : 'Putar',
-                        );
-                        if (status.playing) {
-                          player.pause();
-                        } else {
-                          player.play();
-                        }
-                      }}
-                    >
-                      <MaterialIcons
-                        name={status.playing ? 'pause' : 'play-arrow'}
-                        accessibilityLabel={status.playing ? 'Jeda' : 'Putar'}
-                        size={24}
-                        color={iconColor}
-                      />
-                    </Pressable>
-                    <Pressable onPress={mainkanSelanjutnya}>
-                      <MaterialIcons
-                        name="skip-next"
-                        size={24}
-                        color={iconColor}
-                      />
-                    </Pressable>
-                  </ThemedView>
+                <ThemedView style={{ flexDirection: 'row', gap: 8 }}>
+                  <Pressable>
+                    <MaterialIcons
+                      name="skip-previous"
+                      size={24}
+                      color={iconColor}
+                    />
+                  </Pressable>
+                  <Pressable
+                    onPress={() => {
+                      console.log(
+                        'PemutarMusik: tombol',
+                        status.playing ? 'Jeda' : 'Putar',
+                      );
+                      if (status.playing) {
+                        player.pause();
+                      } else {
+                        player.play();
+                      }
+                    }}
+                  >
+                    <MaterialIcons
+                      name={status.playing ? 'pause' : 'play-arrow'}
+                      accessibilityLabel={status.playing ? 'Jeda' : 'Putar'}
+                      size={24}
+                      color={iconColor}
+                    />
+                  </Pressable>
+                  <Pressable onPress={mainkanSelanjutnya}>
+                    <MaterialIcons
+                      name="skip-next"
+                      size={24}
+                      color={iconColor}
+                    />
+                  </Pressable>
                 </ThemedView>
-              </View>
-            )}
-          </Portal>
-        </PaperProvider>
-      </SafeAreaView>
+              </ThemedView>
+            </View>
+          )}
+        </Portal>
+      </PaperProvider>
     </ThemeProvider>
   );
 }
