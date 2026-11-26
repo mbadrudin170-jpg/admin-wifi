@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Spacing } from '@/constants/theme';
 import { router } from 'expo-router';
 import { setPlaylist } from '../pemutar-musik';
+import AppBar from '@/components/app-bar';
 
 type MusikLokal = {
   id: string;
@@ -73,11 +74,10 @@ export default function ListMusik() {
 
   return (
     <SafeAreaView edges={['bottom', 'left', 'top']} style={styles.container}>
+      <AppBar>
+        <ThemedText>Daftar Lagu</ThemedText>
+      </AppBar>
       <ThemedView style={styles.card}>
-        <ThemedText type="title" style={styles.title}>
-          Daftar Musik Lokal
-        </ThemedText>
-
         {izin === false ? (
           <ThemedText type="small" style={styles.empty}>
             Izin akses media ditolak
