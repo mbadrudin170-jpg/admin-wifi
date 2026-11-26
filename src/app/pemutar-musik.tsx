@@ -8,7 +8,7 @@ import {
   View,
 } from 'react-native';
 import { useColorScheme } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import * as MediaLibrary from 'expo-media-library';
 import {
   createAudioPlayer,
@@ -20,6 +20,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Spacing } from '@/constants/theme';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 // Player disimpan di globalThis agar tetap hidup saat Fast Refresh/hot reload.
 const globalAudio = globalThis as {
@@ -106,8 +107,6 @@ function formatWaktu(detik: number) {
   return `${menit}:${sisa.toString().padStart(2, '0')}`;
 }
 
-const StatusBarAny = StatusBar as any;
-
 export default function PemutarMusik() {
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
@@ -136,11 +135,6 @@ export default function PemutarMusik() {
       shouldPlayInBackground: true,
       interruptionMode: 'doNotMix',
     });
-  }, []);
-
-  useEffect(() => {
-    (StatusBar as any).setBackgroundColor?.('black', true);
-    (StatusBar as any).setBarStyle?.('light-content', true);
   }, []);
 
   useEffect(() => {
@@ -371,9 +365,18 @@ export default function PemutarMusik() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom', 'left', 'right']}>
-      <StatusBarAny barStyle="light-content" backgroundColor="black" translucent={false} />
+      <StatusBar barStyle="dark-content" />
       <ThemedView style={styles.container}>
-        <ThemedView>
+        <ThemedView
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <Pressable onPress={() => router.back()}>
+            <MaterialIcons name="arrow-back" size={24} color="white" />
+          </Pressable>
           <ThemedText>Pemutar Musik</ThemedText>
         </ThemedView>
 
@@ -489,7 +492,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     paddingHorizontal: Spacing.one,
     paddingVertical: Spacing.one,
     gap: Spacing.four,
