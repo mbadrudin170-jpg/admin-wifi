@@ -24,6 +24,10 @@
         "android.permission.READ_MEDIA_AUDIO"
       ]
     },
+    "androidStatusBar": {
+      "barStyle": "light-content",
+      "backgroundColor": "#000000"
+    },
     "web": {
       "output": "server",
       "favicon": "./assets/images/favicon.png"

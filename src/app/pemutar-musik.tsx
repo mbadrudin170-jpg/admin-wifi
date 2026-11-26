@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { Button, FlatList, Pressable, StyleSheet, View } from 'react-native';
+import {
+  Button,
+  FlatList,
+  Pressable,
+  StatusBar,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { useColorScheme } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import * as MediaLibrary from 'expo-media-library';
@@ -99,6 +106,8 @@ function formatWaktu(detik: number) {
   return `${menit}:${sisa.toString().padStart(2, '0')}`;
 }
 
+const StatusBarAny = StatusBar as any;
+
 export default function PemutarMusik() {
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
@@ -127,6 +136,11 @@ export default function PemutarMusik() {
       shouldPlayInBackground: true,
       interruptionMode: 'doNotMix',
     });
+  }, []);
+
+  useEffect(() => {
+    (StatusBar as any).setBackgroundColor?.('black', true);
+    (StatusBar as any).setBarStyle?.('light-content', true);
   }, []);
 
   useEffect(() => {
@@ -356,7 +370,8 @@ export default function PemutarMusik() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['bottom', 'left', 'right']}>
+      <StatusBarAny barStyle="light-content" backgroundColor="black" translucent={false} />
       <ThemedView style={styles.container}>
         <ThemedView>
           <ThemedText>Pemutar Musik</ThemedText>
@@ -475,7 +490,8 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: Spacing.four,
+    paddingHorizontal: Spacing.one,
+    paddingVertical: Spacing.one,
     gap: Spacing.four,
   },
   artwork: {
