@@ -2,7 +2,12 @@ import { createAudioPlayer } from 'expo-audio';
 import * as MediaLibrary from 'expo-media-library';
 import { create } from 'zustand';
 
-export type PlaylistItem = { id: string; filename: string; duration: number };
+export type PlaylistItem = {
+  id: string;
+  filename: string;
+  duration: number;
+  artwork?: string;
+};
 
 type PlayerState = {
   playlist: PlaylistItem[];
@@ -29,6 +34,41 @@ type PlayerState = {
   _setLibraryError: (e: string | null) => void;
   _setHasPermission: (v: boolean | null) => void;
   _setLibraryOffset: (v: number) => void;
+};
+
+const cariCover = async (namaFile: string): Promise<string | undefined> => {
+  if (!namaFile) return undefined;
+  try {
+    const namaBersih = namaFile
+      .replace(/\.[^.]+$/, '')
+      .replace(/_\d+$/, '')
+      .replace(/[_]+/g, ' ')
+      .trim();
+    const kueri = namaBersih || namaFile;
+    const parts = kueri.split(' - ');
+    let track = kueri;
+    let artist = '';
+    if (parts.length >= 2) {
+      artist = parts[0].trim();
+      track = parts.slice(1).join(' - ').trim();
+    }
+    track = track.replace(/\([^)]*\)/g, '').trim();
+
+    const term = encodeURIComponent(
+      [artist, track].filter(Boolean).join(' '),
+    );
+    const res = await fetch(
+      `https://itunes.apple.com/search?term=${term}&media=music&limit=1`,
+    );
+    if (!res.ok) return undefined;
+    const data = await res.json();
+    const item = Array.isArray(data?.results) ? data.results[0] : null;
+    return typeof item?.artworkUrl100 === 'string'
+      ? item.artworkUrl100.replace('100x100bb', '600x600bb')
+      : undefined;
+  } catch {
+    return undefined;
+  }
 };
 
 export const usePlayerStore = create<PlayerState>((set) => ({
@@ -79,11 +119,14 @@ export const usePlayerStore = create<PlayerState>((set) => ({
         .offset(0)
         .exeForMetadata();
 
-      const items: PlaylistItem[] = hasil.map((item) => ({
-        id: item.id,
-        filename: item.filename ?? 'Tanpa nama',
-        duration: item.duration ?? 0,
-      }));
+      const items: PlaylistItem[] = await Promise.all(
+        hasil.map(async (item) => ({
+          id: item.id,
+          filename: item.filename ?? 'Tanpa nama',
+          duration: item.duration ?? 0,
+          artwork: await cariCover(item.filename ?? ''),
+        })),
+      );
       state._setLibrary(items);
       state._setLibraryOffset(items.length);
     } catch (error) {
@@ -111,11 +154,14 @@ export const usePlayerStore = create<PlayerState>((set) => ({
         .offset(state.libraryOffset)
         .exeForMetadata();
 
-      const items: PlaylistItem[] = hasil.map((item) => ({
-        id: item.id,
-        filename: item.filename ?? 'Tanpa nama',
-        duration: item.duration ?? 0,
-      }));
+      const items: PlaylistItem[] = await Promise.all(
+        hasil.map(async (item) => ({
+          id: item.id,
+          filename: item.filename ?? 'Tanpa nama',
+          duration: item.duration ?? 0,
+          artwork: await cariCover(item.filename ?? ''),
+        })),
+      );
 
       if (items.length > 0) {
         state._setLibrary([...state.libraryMusik, ...items]);

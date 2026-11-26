@@ -110,6 +110,7 @@ export default function PemutarMusik() {
   const [isSliding, setIsSliding] = useState(false);
   const [nilaiSlider, setNilaiSlider] = useState(status.currentTime);
   const pendingSeekRef = useRef<number | null>(null);
+  const coverCache = useRef<Map<string, string | null>>(new Map());
 
   useEffect(() => {
     if (isSliding) return;
@@ -292,6 +293,11 @@ export default function PemutarMusik() {
         return;
       }
       try {
+        const cached = coverCache.current.get(judulAktif);
+        if (cached !== undefined) {
+          if (aktif) setCoverUri(cached);
+          return;
+        }
         const namaBersih = (judulAktif ?? '')
           .replace(/\.[^.]+$/, '')
           .replace(/_\d+$/, '')
@@ -320,6 +326,7 @@ export default function PemutarMusik() {
           (typeof item?.artworkUrl100 === 'string'
             ? item.artworkUrl100.replace('100x100bb', '600x600bb')
             : null) ?? null;
+        coverCache.current.set(judulAktif, url);
         if (aktif) setCoverUri(url);
       } catch (e) {
         console.log('PemutarMusik: gagal memuat cover', e);

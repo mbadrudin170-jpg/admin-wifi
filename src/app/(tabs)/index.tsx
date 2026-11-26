@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { FlatList, Pressable, StyleSheet } from 'react-native';
+import { FlatList, Image, Pressable, StyleSheet, View } from 'react-native';
 
 import AppBar from '@/components/app-bar';
 import { ThemedText } from '@/components/themed-text';
@@ -135,12 +135,26 @@ export default function ListMusik() {
                   router.push('/pemutar-musik');
                 }}
               >
-                <ThemedText type="default" style={styles.nama}>
-                  {item.filename}
-                </ThemedText>
-                <ThemedText type="small" style={styles.meta}>
-                  Durasi {formatDurasi(item.duration)}
-                </ThemedText>
+                <View style={styles.albumArtContainer}>
+                  {item.artwork ? (
+                    <Image
+                      source={{ uri: item.artwork }}
+                      style={styles.albumArt}
+                    />
+                  ) : (
+                    <View
+                      style={[styles.albumArt, styles.albumArtPlaceholder]}
+                    />
+                  )}
+                </View>
+                <View style={styles.textContainer}>
+                  <ThemedText type="default" style={styles.nama}>
+                    {item.filename}
+                  </ThemedText>
+                  <ThemedText type="small" style={styles.meta}>
+                    Durasi {formatDurasi(item.duration)}
+                  </ThemedText>
+                </View>
               </Pressable>
             )}
           />
@@ -169,10 +183,32 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   row: {
+    flexDirection: 'row',
+    alignItems: 'center',
     padding: Spacing.two,
     borderRadius: Spacing.two,
     backgroundColor: 'rgba(0,0,0,0.05)',
-    gap: Spacing.one,
+  },
+  albumArtContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  albumArt: {
+    width: '100%',
+    height: '100%',
+  },
+  albumArtPlaceholder: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#ccc',
+  },
+  textContainer: {
+    flex: 1,
   },
   nama: {
     fontWeight: '600',
