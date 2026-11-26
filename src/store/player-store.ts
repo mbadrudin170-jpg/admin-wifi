@@ -18,14 +18,17 @@ type PlayerState = {
   setIdDimuat: (id: string | null) => void;
 
   libraryMusik: PlaylistItem[];
+  libraryOffset: number;
   isLoadingLibrary: boolean;
   libraryError: string | null;
   hasPermission: boolean | null;
   loadLibrary: () => Promise<void>;
+  loadMoreLibrary: () => Promise<void>;
   _setLibrary: (items: PlaylistItem[]) => void;
   _setLibraryLoading: (v: boolean) => void;
   _setLibraryError: (e: string | null) => void;
   _setHasPermission: (v: boolean | null) => void;
+  _setLibraryOffset: (v: number) => void;
 };
 
 export const usePlayerStore = create<PlayerState>((set) => ({
@@ -42,6 +45,7 @@ export const usePlayerStore = create<PlayerState>((set) => ({
   setIdDimuat: (id) => set({ idDimuat: id }),
 
   libraryMusik: [],
+  libraryOffset: 0,
   isLoadingLibrary: false,
   libraryError: null,
   hasPermission: null,
@@ -49,16 +53,19 @@ export const usePlayerStore = create<PlayerState>((set) => ({
   _setLibraryLoading: (v) => set({ isLoadingLibrary: v }),
   _setLibraryError: (e) => set({ libraryError: e }),
   _setHasPermission: (v) => set({ hasPermission: v }),
+  _setLibraryOffset: (v) => set({ libraryOffset: v }),
   loadLibrary: async () => {
     const state = usePlayerStore.getState();
     state._setLibraryLoading(true);
     state._setLibraryError(null);
+    state._setLibraryOffset(0);
     try {
       const permission = await MediaLibrary.requestPermissionsAsync();
       if (!permission.granted) {
         state._setHasPermission(false);
         state._setLibraryError('Izin akses media ditolak');
         state._setLibrary([]);
+        state._setLibraryOffset(0);
         return;
       }
       state._setHasPermission(true);
@@ -68,7 +75,8 @@ export const usePlayerStore = create<PlayerState>((set) => ({
           key: MediaLibrary.AssetField.CREATION_TIME,
           ascending: false,
         })
-        .limit(200)
+        .limit(50)
+        .offset(0)
         .exeForMetadata();
 
       const items: PlaylistItem[] = hasil.map((item) => ({
@@ -77,10 +85,44 @@ export const usePlayerStore = create<PlayerState>((set) => ({
         duration: item.duration ?? 0,
       }));
       state._setLibrary(items);
+      state._setLibraryOffset(items.length);
     } catch (error) {
       console.error('Gagal memuat musik lokal:', error);
       state._setLibraryError('Gagal memuat musik');
       state._setLibrary([]);
+      state._setLibraryOffset(0);
+    } finally {
+      state._setLibraryLoading(false);
+    }
+  },
+  loadMoreLibrary: async () => {
+    const state = usePlayerStore.getState();
+    if (state.isLoadingLibrary || !state.hasPermission) return;
+
+    state._setLibraryLoading(true);
+    try {
+      const hasil = await new MediaLibrary.Query()
+        .eq(MediaLibrary.AssetField.MEDIA_TYPE, MediaLibrary.MediaType.AUDIO)
+        .orderBy({
+          key: MediaLibrary.AssetField.CREATION_TIME,
+          ascending: false,
+        })
+        .limit(50)
+        .offset(state.libraryOffset)
+        .exeForMetadata();
+
+      const items: PlaylistItem[] = hasil.map((item) => ({
+        id: item.id,
+        filename: item.filename ?? 'Tanpa nama',
+        duration: item.duration ?? 0,
+      }));
+
+      if (items.length > 0) {
+        state._setLibrary([...state.libraryMusik, ...items]);
+        state._setLibraryOffset(state.libraryOffset + items.length);
+      }
+    } catch (error) {
+      console.error('Gagal memuat musik lebih lanjut:', error);
     } finally {
       state._setLibraryLoading(false);
     }
@@ -123,4 +165,8 @@ export function getIdDimuatStore() {
 
 export function setIdDimuatStore(value: string | null) {
   usePlayerStore.getState().setIdDimuat(value);
+}
+
+export function loadMoreLibrary() {
+  usePlayerStore.getState().loadMoreLibrary();
 }

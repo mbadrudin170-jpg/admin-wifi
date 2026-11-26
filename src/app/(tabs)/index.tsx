@@ -18,6 +18,7 @@ export default function ListMusik() {
   const izin = usePlayerStore((s) => s.hasPermission);
   const memuat = usePlayerStore((s) => s.isLoadingLibrary);
   const loadLibrary = usePlayerStore((s) => s.loadLibrary);
+  const loadMore = usePlayerStore((s) => s.loadMoreLibrary);
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
@@ -46,10 +47,6 @@ export default function ListMusik() {
           <ThemedText type="small" style={styles.empty}>
             Izin akses media ditolak
           </ThemedText>
-        ) : memuat ? (
-          <ThemedText type="small" style={styles.empty}>
-            Memuat musik...
-          </ThemedText>
         ) : (
           <FlatList
             data={musik}
@@ -58,8 +55,21 @@ export default function ListMusik() {
             contentContainerStyle={styles.listContent}
             ListEmptyComponent={
               <ThemedText type="small" style={styles.empty}>
-                Tidak ada musik ditemukan
+                {memuat ? 'Memuat musik...' : 'Tidak ada musik ditemukan'}
               </ThemedText>
+            }
+            onEndReached={() => {
+              if (!memuat) {
+                void loadMore();
+              }
+            }}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={
+              memuat && musik.length > 0 ? (
+                <ThemedText type="small" style={styles.empty}>
+                  Memuat lebih banyak...
+                </ThemedText>
+              ) : undefined
             }
             renderItem={({ item, index }) => (
               <Pressable
