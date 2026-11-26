@@ -1,0 +1,38 @@
+name: Build Android Development
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Build Android development APK
+        run: bunx expo run:android --device --variant debug
+        env:
+          NODE_ENV: development
+          EAS_NO_VCS: true
+
+      - name: Locate APK
+        run: find android/app/build/outputs -name "*.apk" -type f 2>/dev/null || true
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-development-apk
+          path: android/app/build/outputs/apk/**/*.apk
+          retention-days: 7
