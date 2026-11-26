@@ -32,7 +32,7 @@ import {
 } from 'react-native-safe-area-context';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import AppBar from '@/components/app-bar';
-
+import { usePlayerStore } from '@/store/player-store';
 // Player disimpan di globalThis agar tetap hidup saat Fast Refresh/hot reload.
 const globalAudio = globalThis as {
   __audioPlayerGlobal?: ReturnType<typeof createAudioPlayer>;
@@ -100,9 +100,9 @@ export default function PemutarMusik() {
   const playlistAwal = getPlaylist();
   const indeksAwal = getPlaylistIndex();
   const laguAwal = playlistAwal[indeksAwal];
-  const [judulAktif, setJudulAktif] = useState(
-    laguAwal?.filename ?? judul ?? 'Pemutar Musik',
-  );
+  const playlist = usePlayerStore((s) => s.playlist);
+  const index = usePlayerStore((s) => s.index);
+  const judulAktif = playlist[index]?.filename ?? 'Pemutar Musik';
   const [coverUri, setCoverUri] = useState<string | null>(null);
   const player = dapatkanPlayer();
   const insets = useSafeAreaInsets();
@@ -402,7 +402,6 @@ export default function PemutarMusik() {
 
     let aktif = true;
     const muat = async () => {
-      setJudulAktif(berikut.filename);
       const info = await new MediaLibrary.Asset(berikut.id).getInfo();
       if (aktif && info?.uri) {
         player.pause();
