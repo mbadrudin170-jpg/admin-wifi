@@ -18,9 +18,13 @@ import {
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { Colors, Spacing } from '@/constants/theme';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import AppBar from '@/components/app-bar';
 
 // Player disimpan di globalThis agar tetap hidup saat Fast Refresh/hot reload.
 const globalAudio = globalThis as {
@@ -57,10 +61,6 @@ function dapatkanPlayer() {
     globalAudio.__audioPlayerGlobal = createAudioPlayer(null);
   }
   return globalAudio.__audioPlayerGlobal;
-}
-
-function getIdGlobal() {
-  return globalAudio.__audioIdGlobal ?? null;
 }
 
 function setIdGlobal(value: string | null) {
@@ -118,6 +118,7 @@ export default function PemutarMusik() {
     laguAwal?.filename ?? judul ?? 'Pemutar Musik',
   );
   const player = dapatkanPlayer();
+  const insets = useSafeAreaInsets();
   const status = useAudioPlayerStatus(player);
   const [lebarProgress, setLebarProgress] = useState(0);
 
@@ -261,8 +262,8 @@ export default function PemutarMusik() {
             setPesanLirik('Lirik tidak ditemukan');
           }
         }
-      } catch (error) {
-        console.log('PemutarMusik: gagal memuat lirik', error);
+      } catch (e) {
+        console.log('PemutarMusik: gagal memuat lirik', e);
         if (aktif) {
           setLirik([]);
           setPesanLirik('Gagal memuat lirik');
@@ -367,18 +368,12 @@ export default function PemutarMusik() {
     <SafeAreaView style={styles.safeArea} edges={['bottom', 'left', 'right']}>
       <StatusBar barStyle="dark-content" />
       <ThemedView style={styles.container}>
-        <ThemedView
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
+        <AppBar style={{ paddingTop: insets.top }}>
           <Pressable onPress={() => router.back()}>
             <MaterialIcons name="arrow-back" size={24} color="white" />
           </Pressable>
           <ThemedText>Pemutar Musik</ThemedText>
-        </ThemedView>
+        </AppBar>
 
         <View style={styles.artwork}>
           <ThemedText style={styles.artworkIcon}>♪</ThemedText>
