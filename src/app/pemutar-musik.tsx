@@ -1,8 +1,8 @@
 import Slider from '@react-native-community/slider';
 import { setAudioModeAsync, useAudioPlayerStatus } from 'expo-audio';
 import * as MediaLibrary from 'expo-media-library';
-import { getItemAsync, setItemAsync } from 'expo-secure-store';
 import { router } from 'expo-router';
+import { getItemAsync, setItemAsync } from 'expo-secure-store';
 import { useEffect, useRef, useState } from 'react';
 import {
   FlatList,
