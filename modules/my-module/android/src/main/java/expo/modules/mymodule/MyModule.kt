@@ -439,21 +439,23 @@ class MyModule : Module() {
           mapOf("hostCount" to hostCount, "totalHosts" to totalHosts, "prefix" to prefixLength)
         )
 
-        if (hostCount > 0) {
-          val pool = java.util.concurrent.Executors.newFixedThreadPool(32)
-          val ports = intArrayOf(80, 443, 53, 22)
-          val futures = (0 until hostCount).map { i ->
-            pool.submit<Boolean> {
-              try {
-                val hostInt = firstHost + i
-                if (hostInt == ipLong) return@submit false
-                val address = java.net.InetAddress.getByAddress(
-                  intToBytes(hostInt.toInt())
-                )
+      if (hostCount > 0) {
+        val pool = java.util.concurrent.Executors.newFixedThreadPool(32)
+        val ports = intArrayOf(80, 443, 53, 22)
+        val futures = (0 until hostCount).map { i ->
+          pool.submit<String?> {
+            try {
+              val hostInt = firstHost + i
+              if (hostInt == ipLong) return@submit null
+              val address = java.net.InetAddress.getByAddress(
+                intToBytes(hostInt.toInt())
+              )
 
-                // ICMP kadang diblokir Android; coba TCP connect sebagai fallback.
-                if (address.isReachable(300)) return@submit true
-
+              // ICMP kadang diblokir Android; coba TCP connect sebagai fallback.
+              val reachable = if (address.isReachable(300)) {
+                true
+              } else {
+                var found = false
                 for (port in ports) {
                   try {
                     java.net.Socket().use { socket ->
@@ -462,39 +464,67 @@ class MyModule : Module() {
                         250
                       )
                     }
-                    return@submit true
+                    found = true
                   } catch (_: Exception) {
                     // Port tertutup/tidak merespons; lanjut port berikutnya.
                   }
+                  if (found) break
                 }
-
-                false
-              } catch (_: Exception) {
-                false
+                found
               }
+
+              if (reachable) address.hostAddress else null
+            } catch (_: Exception) {
+              null
             }
           }
-          val reachableCount = futures.count { future ->
-            runCatching { future.get() }.getOrNull() == true
-          }
-          pool.shutdown()
-
-          nativeLog(
-            "DEBUG",
-            "getConnectedDevices",
-            "Ping sweep selesai",
-            mapOf(
-              "hostCount" to hostCount,
-              "reachable" to reachableCount
-            )
-          )
-
-          // Baca ulang neighbor table setelah ping sweep.
-          jalankanNeighbor(
-            arrayOf("ip", "-4", "neigh", "show", "dev", iface ?: "wlan0")
-          )
-          bacaArpTable()
         }
+        val reachableIps = futures.mapNotNull { future ->
+          runCatching { future.get() }.getOrNull()
+        }
+        val reachableCount = reachableIps.size
+        pool.shutdown()
+
+        nativeLog(
+          "DEBUG",
+          "getConnectedDevices",
+          "Ping sweep selesai",
+          mapOf(
+            "hostCount" to hostCount,
+            "reachable" to reachableCount
+          )
+        )
+
+        // Tambahkan host yang merespons ping meskipun MAC tidak tersedia
+        // (Android membatasi akses ARP/neighbor cache).
+        reachableIps.forEach { ipHost ->
+          if (seen.add(ipHost)) {
+            devices.add(
+              mapOf(
+                "ip" to ipHost,
+                "mac" to "tidak diketahui",
+                "sumber" to "ping sweep"
+              )
+            )
+            nativeLog(
+              "DEBUG",
+              "getConnectedDevices",
+              "Perangkat ditemukan",
+              mapOf(
+                "sumber" to "ping sweep",
+                "ip" to ipHost,
+                "mac" to "tidak diketahui"
+              )
+            )
+          }
+        }
+
+        // Baca ulang neighbor table setelah ping sweep (tetap dicoba).
+        jalankanNeighbor(
+          arrayOf("ip", "-4", "neigh", "show", "dev", iface ?: "wlan0")
+        )
+        bacaArpTable()
+      }
       } catch (e: Exception) {
         nativeLog("WARN", "getConnectedDevices", "Ping sweep gagal", mapOf("error" to (e.message ?: "")))
       }
