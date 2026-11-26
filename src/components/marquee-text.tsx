@@ -13,15 +13,6 @@ import Animated, {
     useSharedValue,
 } from 'react-native-reanimated';
 
-const styles = StyleSheet.create({
-  wrapper: {
-    overflow: 'hidden',
-  },
-  track: {
-    flexDirection: 'row',
-  },
-});
-
 export function MarqueeText({
   text,
   style,
@@ -93,6 +84,7 @@ export function MarqueeText({
         <View style={styles.track}>
           <Text
             style={style}
+            numberOfLines={1}
             onLayout={(e) => {
               textWidth.current = e.nativeEvent.layout.width;
               startScroll();
@@ -105,3 +97,11 @@ export function MarqueeText({
     </View>
   );
 }
+const styles = StyleSheet.create({
+  wrapper: {
+    overflow: 'hidden',
+  },
+  track: {
+    flexDirection: 'row',
+  },
+});
