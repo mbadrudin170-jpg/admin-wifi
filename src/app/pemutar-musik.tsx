@@ -3,12 +3,18 @@ import { setAudioModeAsync, useAudioPlayerStatus } from 'expo-audio';
 import * as MediaLibrary from 'expo-media-library';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import {
+  FlatList,
+  Pressable,
+  StyleSheet,
+  useColorScheme,
+  View,
+} from 'react-native';
 
 import AppBar from '@/components/app-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { Colors, Spacing } from '@/constants/theme';
 import {
   getIdDimuatStore,
   getOrCreateAudioPlayer,
@@ -62,6 +68,8 @@ function formatWaktu(detik: number) {
 }
 
 export default function PemutarMusik() {
+  const scheme = useColorScheme();
+  const iconColor = scheme === 'dark' ? Colors.dark.text : Colors.light.text;
   const playlist = usePlayerStore((s) => s.playlist);
   const index = usePlayerStore((s) => s.index);
   const judulAktif = playlist[index]?.filename ?? 'Pemutar Musik';
@@ -445,7 +453,7 @@ export default function PemutarMusik() {
 
         <View style={styles.kontrol}>
           <Pressable>
-            <MaterialIcons name="skip-previous" size={32} />
+            <MaterialIcons name="skip-previous" size={32} color={iconColor} />
           </Pressable>
           <Pressable
             onPress={() => {
@@ -464,10 +472,11 @@ export default function PemutarMusik() {
               name={status.playing ? 'pause' : 'play-arrow'}
               accessibilityLabel={status.playing ? 'Jeda' : 'Putar'}
               size={32}
+              color={iconColor}
             />
           </Pressable>
           <Pressable onPress={mainkanSelanjutnya}>
-            <MaterialIcons name="skip-next" size={32} />
+            <MaterialIcons name="skip-next" size={32} color={iconColor} />
           </Pressable>
         </View>
 

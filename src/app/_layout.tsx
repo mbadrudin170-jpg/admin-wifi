@@ -1,17 +1,17 @@
-import { useEffect } from 'react';
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
-import { useColorScheme , Modal, View } from 'react-native';
-import { NavigationBar } from 'expo-navigation-bar';
-import { StatusBar } from 'expo-status-bar';
-import * as MediaLibrary from 'expo-media-library';
-import MyModule from '../../modules/my-module/src/MyModule';
+import { useOverlayStore } from '@/store/overlay-store';
 import {
+  getOrCreateAudioPlayer,
   getPlaylist,
   getPlaylistIndex,
   setPlaylistIndex,
-  getOrCreateAudioPlayer,
 } from '@/store/player-store';
-import { useOverlayStore } from '@/store/overlay-store';
+import * as MediaLibrary from 'expo-media-library';
+import { NavigationBar } from 'expo-navigation-bar';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
+import { Modal, useColorScheme, View } from 'react-native';
+import MyModule from '../../modules/my-module/src/MyModule';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
