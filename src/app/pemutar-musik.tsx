@@ -441,7 +441,7 @@ export default function PemutarMusik() {
           </View>
         )}
 
-        <ThemedText type="title" style={styles.judul} numberOfLines={2}>
+        <ThemedText type="smallBold" style={styles.judul} numberOfLines={2}>
           {judulAktif}
         </ThemedText>
 
@@ -455,6 +455,8 @@ export default function PemutarMusik() {
             }}
             minimumTrackTintColor="#1DB954"
             maximumTrackTintColor="#777777"
+            thumbSize={12}
+            thumbTintColor="#1DB954"
           />
           <View style={styles.waktuRow}>
             <ThemedText type="small">
