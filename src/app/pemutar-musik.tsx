@@ -389,6 +389,7 @@ export default function PemutarMusik() {
               ]}
             />
           </Pressable>
+          
           <View style={styles.waktuRow}>
             <ThemedText type="small">
               {formatWaktu(status.currentTime)}
