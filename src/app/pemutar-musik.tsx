@@ -103,8 +103,8 @@ export default function PemutarMusik() {
   const [lirik, setLirik] = useState<LirikBaris[]>([]);
   const [memuatLirik, setMemuatLirik] = useState(false);
   const [pesanLirik, setPesanLirik] = useState<string | null>(null);
-  const sliderRef = useRef(status.currentTime);
   const [isSliding, setIsSliding] = useState(false);
+  const [nilaiSlider, setNilaiSlider] = useState(status.currentTime);
   const mainkanSelanjutnya = async () => {
     const daftar = getPlaylist();
     const indeksBerikut = getPlaylistIndex() + 1;
@@ -437,17 +437,17 @@ export default function PemutarMusik() {
           <Slider
             minimumValue={0}
             maximumValue={status.duration || 1}
-            value={isSliding ? sliderRef.current : status.currentTime}
+            value={isSliding ? nilaiSlider : status.currentTime}
             onSlidingStart={() => {
               setIsSliding(true);
-              sliderRef.current = status.currentTime;
+              setNilaiSlider(status.currentTime);
             }}
             onValueChange={(v) => {
-              sliderRef.current = v;
+              setNilaiSlider(v);
             }}
             onSlidingComplete={(value) => {
               setIsSliding(false);
-              sliderRef.current = value;
+              setNilaiSlider(value);
               player.seekTo(value);
             }}
             minimumTrackTintColor="#1DB954"
