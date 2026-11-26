@@ -122,9 +122,12 @@ export default function PemutarMusik() {
   const status = useAudioPlayerStatus(player);
 
   useEffect(() => {
-    (globalThis as { __pemutarMusikMounted?: boolean }).__pemutarMusikMounted = true;
+    (globalThis as { __pemutarMusikMounted?: boolean }).__pemutarMusikMounted =
+      true;
     return () => {
-      (globalThis as { __pemutarMusikMounted?: boolean }).__pemutarMusikMounted = false;
+      (
+        globalThis as { __pemutarMusikMounted?: boolean }
+      ).__pemutarMusikMounted = false;
     };
   }, []);
 
