@@ -347,19 +347,25 @@ class MyModule : Module() {
         )
       )
 
-      // Neighbor table sebagai sumber utama.
+       // Neighbor table sebagai sumber utama.
       fun jalankanNeighbor(cmd: Array<String>) {
+        val rawLines = mutableListOf<String>()
         try {
           val process = Runtime.getRuntime().exec(cmd)
-          process.inputStream.bufferedReader().forEachLine {
-            parseNeighborLine(it, iface)
+          process.inputStream.bufferedReader().forEachLine { line ->
+            rawLines.add(line)
+            parseNeighborLine(line, iface)
           }
           process.waitFor()
           nativeLog(
             "DEBUG",
             "getConnectedDevices",
             "Neighbor selesai",
-            mapOf("command" to cmd.joinToString(" "))
+            mapOf(
+              "command" to cmd.joinToString(" "),
+              "rawCount" to rawLines.size,
+              "rawSample" to rawLines.take(10).joinToString(" | ")
+            )
           )
         } catch (e: Exception) {
           nativeLog(
@@ -371,9 +377,44 @@ class MyModule : Module() {
         }
       }
 
+      // Fallback: baca ARP table langsung (beberapa ROM mengosongkan output `ip neigh`).
+      fun bacaArpTable() {
+        val rawLines = mutableListOf<String>()
+        try {
+          java.io.File("/proc/net/arp").bufferedReader().forEachLine { line ->
+            rawLines.add(line)
+            val parts = line.trim().split(Regex("\\s+"))
+            if (parts.size < 4 || parts[0] == "IP") return@forEachLine
+            val ip = parts[0]
+            val mac = parts.getOrElse(3) { "" }
+            val device = parts.getOrElse(parts.lastIndex) { "" }
+            if (iface != null && device != iface) return@forEachLine
+            tambah(ip, mac, "arp table")
+          }
+          nativeLog(
+            "DEBUG",
+            "getConnectedDevices",
+            "ARP table selesai",
+            mapOf(
+              "source" to "/proc/net/arp",
+              "rawCount" to rawLines.size,
+              "rawSample" to rawLines.take(10).joinToString(" | ")
+            )
+          )
+        } catch (e: Exception) {
+          nativeLog(
+            "WARN",
+            "getConnectedDevices",
+            "Gagal membaca ARP table",
+            mapOf("error" to (e.message ?: ""))
+          )
+        }
+      }
+
       jalankanNeighbor(
         arrayOf("ip", "-4", "neigh", "show", "dev", iface ?: "wlan0")
       )
+      bacaArpTable()
 
       // Ping sweep untuk mengisi neighbor cache, lalu baca ulang.
       try {
@@ -400,26 +441,59 @@ class MyModule : Module() {
 
         if (hostCount > 0) {
           val pool = java.util.concurrent.Executors.newFixedThreadPool(32)
+          val ports = intArrayOf(80, 443, 53, 22)
           val futures = (0 until hostCount).map { i ->
             pool.submit<Boolean> {
               try {
                 val hostInt = firstHost + i
                 if (hostInt == ipLong) return@submit false
-                java.net.InetAddress.getByAddress(
+                val address = java.net.InetAddress.getByAddress(
                   intToBytes(hostInt.toInt())
-                ).isReachable(200)
+                )
+
+                // ICMP kadang diblokir Android; coba TCP connect sebagai fallback.
+                if (address.isReachable(300)) return@submit true
+
+                for (port in ports) {
+                  try {
+                    java.net.Socket().use { socket ->
+                      socket.connect(
+                        java.net.InetSocketAddress(address, port),
+                        250
+                      )
+                    }
+                    return@submit true
+                  } catch (_: Exception) {
+                    // Port tertutup/tidak merespons; lanjut port berikutnya.
+                  }
+                }
+
+                false
               } catch (_: Exception) {
                 false
               }
             }
           }
-          futures.forEach { runCatching { it.get() } }
+          val reachableCount = futures.count { future ->
+            runCatching { future.get() }.getOrNull() == true
+          }
           pool.shutdown()
+
+          nativeLog(
+            "DEBUG",
+            "getConnectedDevices",
+            "Ping sweep selesai",
+            mapOf(
+              "hostCount" to hostCount,
+              "reachable" to reachableCount
+            )
+          )
 
           // Baca ulang neighbor table setelah ping sweep.
           jalankanNeighbor(
             arrayOf("ip", "-4", "neigh", "show", "dev", iface ?: "wlan0")
           )
+          bacaArpTable()
         }
       } catch (e: Exception) {
         nativeLog("WARN", "getConnectedDevices", "Ping sweep gagal", mapOf("error" to (e.message ?: "")))
