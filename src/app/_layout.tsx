@@ -145,7 +145,10 @@ export default function RootLayout() {
                 }}
               >
                 <MarqueeText
-                  containerStyle={{ flex: 1 }}
+                  containerStyle={{
+                    flex: 1,
+                    minWidth: 0,
+                  }}
                   style={{ color: iconColor }}
                   text={playlist[index]?.filename ?? 'Pemutar Musik'}
                   speed={40}

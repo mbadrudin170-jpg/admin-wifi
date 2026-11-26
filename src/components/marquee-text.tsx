@@ -1,107 +1,127 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
-    LayoutChangeEvent,
     StyleSheet,
     Text,
-    TextStyle,
     View,
+    type LayoutChangeEvent,
     type StyleProp,
+    type TextStyle,
     type ViewStyle,
 } from 'react-native';
+
 import Animated, {
+    cancelAnimation,
+    Easing,
     useAnimatedStyle,
     useSharedValue,
+    withDelay,
+    withRepeat,
+    withSequence,
+    withTiming,
 } from 'react-native-reanimated';
+
+type MarqueeTextProps = {
+  text: string;
+  style?: StyleProp<TextStyle>;
+  containerStyle?: StyleProp<ViewStyle>;
+  speed?: number;
+  pause?: number;
+  gap?: number;
+};
 
 export function MarqueeText({
   text,
   style,
   containerStyle,
-  speed = 50,
-  pause = 1000,
-}: {
-  text: string;
-  style?: TextStyle;
-  containerStyle?: StyleProp<ViewStyle>;
-  speed?: number;
-  pause?: number;
-}) {
-  const scrollX = useSharedValue(0);
-  const containerWidth = useRef(0);
-  const textWidth = useRef(0);
-  const rafRef = useRef<number | null>(null);
+  speed = 40,
+  pause = 800,
+  gap = 40,
+}: MarqueeTextProps) {
+  const [containerWidth, setContainerWidth] = useState(0);
+  const [textWidth, setTextWidth] = useState(0);
 
-  const stop = useCallback(() => {
-    if (rafRef.current !== null) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    }
+  const translateX = useSharedValue(0);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.get() }],
+  }));
+
+  const onContainerLayout = useCallback((event: LayoutChangeEvent) => {
+    const width = event.nativeEvent.layout.width;
+    setContainerWidth((current) => (current === width ? current : width));
   }, []);
 
-  const onContainerLayout = useCallback((e: LayoutChangeEvent) => {
-    containerWidth.current = e.nativeEvent.layout.width;
+  const onTextLayout = useCallback((event: LayoutChangeEvent) => {
+    const width = event.nativeEvent.layout.width;
+    setTextWidth((current) => (current === width ? current : width));
   }, []);
 
-  const startScroll = useCallback(() => {
-    stop();
+  const isOverflowing = containerWidth > 0 && textWidth > containerWidth;
 
-    if (
-      containerWidth.current > 0 &&
-      textWidth.current > containerWidth.current
-    ) {
-      const start = containerWidth.current;
-      const end = -(textWidth.current + containerWidth.current);
-
-      let current = start;
-      const tick = () => {
-        current -= speed / 50;
-        scrollX.value = current;
-        if (current > end) {
-          rafRef.current = requestAnimationFrame(tick);
-        } else {
-          setTimeout(() => {
-            scrollX.value = start;
-            rafRef.current = requestAnimationFrame(tick);
-          }, pause);
-        }
-      };
-      rafRef.current = requestAnimationFrame(tick);
-    }
-  }, [scrollX, speed, pause, stop]);
-
-  // Restart scroll saat teks berubah (ganti lagu)
   useEffect(() => {
-    startScroll();
-  }, [text, startScroll]);
+    cancelAnimation(translateX);
+    translateX.set(0);
+
+    if (!isOverflowing || speed <= 0) {
+      return () => cancelAnimation(translateX);
+    }
+
+    const distance = textWidth + gap;
+    const duration = (distance / speed) * 1000;
+
+    translateX.set(
+      withRepeat(
+        withSequence(
+          withTiming(-distance, {
+            duration,
+            easing: Easing.linear,
+          }),
+          withDelay(pause, withTiming(0, { duration: 0 })),
+        ),
+        -1,
+        false,
+      ),
+    );
+
+    return () => cancelAnimation(translateX);
+  }, [text, textWidth, isOverflowing, speed, pause, gap, translateX]);
 
   return (
-    <View style={[styles.wrapper, containerStyle]} onLayout={onContainerLayout}>
-      <Animated.View
-        style={useAnimatedStyle(() => ({
-          transform: [{ translateX: scrollX.value }],
-        }))}
-      >
-        <View style={styles.track}>
+    <View onLayout={onContainerLayout} style={[styles.wrapper, containerStyle]}>
+      <Animated.View style={[styles.track, animatedStyle]}>
+        <Text
+          numberOfLines={1}
+          ellipsizeMode="clip"
+          onLayout={onTextLayout}
+          style={[styles.text, style]}
+        >
+          {text}
+        </Text>
+
+        {isOverflowing && (
           <Text
-            style={style}
             numberOfLines={1}
-            onLayout={(e) => {
-              textWidth.current = e.nativeEvent.layout.width;
-              startScroll();
-            }}
+            ellipsizeMode="clip"
+            style={[styles.text, style, { marginLeft: gap }]}
           >
             {text}
           </Text>
-        </View>
+        )}
       </Animated.View>
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   wrapper: {
+    minWidth: 0,
     overflow: 'hidden',
   },
   track: {
     flexDirection: 'row',
+    alignSelf: 'flex-start',
+  },
+  text: {
+    flexShrink: 0,
   },
 });
