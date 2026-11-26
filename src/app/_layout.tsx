@@ -5,11 +5,11 @@ import { NavigationBar } from 'expo-navigation-bar';
 import { StatusBar } from 'expo-status-bar';
 import * as MediaLibrary from 'expo-media-library';
 import MyModule from '../../modules/my-module/src/MyModule';
-import { dapatkanPlayer } from './pemutar-musik';
 import {
   getPlaylist,
   getPlaylistIndex,
   setPlaylistIndex,
+  getOrCreateAudioPlayer,
 } from '@/store/player-store';
 import { useOverlayStore } from '@/store/overlay-store';
 
@@ -52,17 +52,11 @@ export default function RootLayout() {
 
   // Auto-advance global: saat layar pemutar tidak aktif, tetap lanjut ke lagu berikutnya.
   useEffect(() => {
-    const player = dapatkanPlayer();
+    const player = getOrCreateAudioPlayer();
     const subscription = player.addListener(
       'playbackStatusUpdate',
       (status: any) => {
         if (!status?.didJustFinish) return;
-        if (
-          (globalThis as { __pemutarMusikMounted?: boolean })
-            .__pemutarMusikMounted
-        ) {
-          return;
-        }
         const daftar = getPlaylist();
         const indeksBerikut = getPlaylistIndex() + 1;
         if (indeksBerikut >= daftar.length) return;

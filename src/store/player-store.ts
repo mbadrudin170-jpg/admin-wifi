@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import * as MediaLibrary from 'expo-media-library';
+import { createAudioPlayer } from 'expo-audio';
 
 export type PlaylistItem = { id: string; filename: string; duration: number };
 
@@ -8,6 +9,13 @@ type PlayerState = {
   index: number;
   setPlaylist: (items: PlaylistItem[], index: number) => void;
   setIndex: (index: number) => void;
+
+  audioPlayer: ReturnType<typeof createAudioPlayer> | null;
+  audioId: string | null;
+  idDimuat: string | null;
+  setAudioPlayer: (p: ReturnType<typeof createAudioPlayer> | null) => void;
+  setAudioId: (id: string | null) => void;
+  setIdDimuat: (id: string | null) => void;
 
   libraryMusik: PlaylistItem[];
   isLoadingLibrary: boolean;
@@ -25,6 +33,13 @@ export const usePlayerStore = create<PlayerState>((set) => ({
   index: 0,
   setPlaylist: (items, index) => set({ playlist: items, index }),
   setIndex: (index) => set({ index }),
+
+  audioPlayer: null,
+  audioId: null,
+  idDimuat: null,
+  setAudioPlayer: (p) => set({ audioPlayer: p }),
+  setAudioId: (id) => set({ audioId: id }),
+  setIdDimuat: (id) => set({ idDimuat: id }),
 
   libraryMusik: [],
   isLoadingLibrary: false,
@@ -86,4 +101,26 @@ export function getPlaylistIndex() {
 
 export function setPlaylistIndex(index: number) {
   usePlayerStore.getState().setIndex(index);
+}
+
+export function getOrCreateAudioPlayer() {
+  const state = usePlayerStore.getState();
+  if (!state.audioPlayer) {
+    const p = createAudioPlayer(null);
+    state.setAudioPlayer(p);
+    return p;
+  }
+  return state.audioPlayer;
+}
+
+export function setAudioIdGlobal(value: string | null) {
+  usePlayerStore.getState().setAudioId(value);
+}
+
+export function getIdDimuatStore() {
+  return usePlayerStore.getState().idDimuat;
+}
+
+export function setIdDimuatStore(value: string | null) {
+  usePlayerStore.getState().setIdDimuat(value);
 }

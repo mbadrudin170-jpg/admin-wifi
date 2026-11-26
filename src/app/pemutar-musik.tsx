@@ -1,9 +1,5 @@
 import Slider from '@react-native-community/slider';
-import {
-  createAudioPlayer,
-  setAudioModeAsync,
-  useAudioPlayerStatus,
-} from 'expo-audio';
+import { setAudioModeAsync, useAudioPlayerStatus } from 'expo-audio';
 import * as MediaLibrary from 'expo-media-library';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -14,8 +10,12 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import {
+  getIdDimuatStore,
+  getOrCreateAudioPlayer,
   getPlaylist,
   getPlaylistIndex,
+  setAudioIdGlobal,
+  setIdDimuatStore,
   setPlaylistIndex,
   usePlayerStore,
 } from '@/store/player-store';
@@ -25,34 +25,9 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
-// Player disimpan di globalThis agar tetap hidup saat Fast Refresh/hot reload.
-const globalAudio = globalThis as {
-  __audioPlayerGlobal?: ReturnType<typeof createAudioPlayer>;
-  __audioIdGlobal?: string | null;
-  __idDimuat?: string | null;
-};
 
 export { setPlaylist } from '@/store/player-store';
 export type { PlaylistItem } from '@/store/player-store';
-
-export function dapatkanPlayer() {
-  if (!globalAudio.__audioPlayerGlobal) {
-    globalAudio.__audioPlayerGlobal = createAudioPlayer(null);
-  }
-  return globalAudio.__audioPlayerGlobal;
-}
-
-function setIdGlobal(value: string | null) {
-  globalAudio.__audioIdGlobal = value;
-}
-
-function getIdDimuat() {
-  return globalAudio.__idDimuat ?? null;
-}
-
-function setIdDimuat(value: string | null) {
-  globalAudio.__idDimuat = value;
-}
 
 type LirikBaris = { waktu: number; teks: string };
 
@@ -92,7 +67,7 @@ export default function PemutarMusik() {
   const index = usePlayerStore((s) => s.index);
   const judulAktif = playlist[index]?.filename ?? 'Pemutar Musik';
   const [coverUri, setCoverUri] = useState<string | null>(null);
-  const player = dapatkanPlayer();
+  const player = getOrCreateAudioPlayer();
   const insets = useSafeAreaInsets();
   const status = useAudioPlayerStatus(player);
 
@@ -142,16 +117,6 @@ export default function PemutarMusik() {
   };
 
   useEffect(() => {
-    (globalThis as { __pemutarMusikMounted?: boolean }).__pemutarMusikMounted =
-      true;
-    return () => {
-      (
-        globalThis as { __pemutarMusikMounted?: boolean }
-      ).__pemutarMusikMounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
     void setAudioModeAsync({
       playsInSilentMode: true,
       shouldPlayInBackground: true,
@@ -163,10 +128,10 @@ export default function PemutarMusik() {
     let aktif = true;
 
     const muatSumber = async () => {
-      if (!id || id === getIdDimuat()) {
+      if (!id || id === getIdDimuatStore()) {
         console.log('PemutarMusik: sumber tidak dimuat ulang', {
           id,
-          idDimuat: getIdDimuat(),
+          idDimuat: getIdDimuatStore(),
         });
         return;
       }
@@ -176,8 +141,8 @@ export default function PemutarMusik() {
         console.log('PemutarMusik: URI audio ditemukan', info.uri);
         player.pause();
         player.replace(info.uri);
-        setIdGlobal(id);
-        setIdDimuat(id);
+        setAudioIdGlobal(id);
+        setIdDimuatStore(id);
         player.setActiveForLockScreen(true, { title: judul ?? 'Musik' });
         player.play();
         console.log('PemutarMusik: mulai putar');
@@ -409,7 +374,7 @@ export default function PemutarMusik() {
       if (aktif && info?.uri) {
         player.pause();
         player.replace(info.uri);
-        setIdGlobal(berikut.id);
+        setAudioIdGlobal(berikut.id);
         player.setActiveForLockScreen(true, { title: berikut.filename });
         player.play();
       }
