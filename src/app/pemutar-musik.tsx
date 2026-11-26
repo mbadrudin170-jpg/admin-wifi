@@ -4,6 +4,7 @@ import * as MediaLibrary from 'expo-media-library';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
+  BackHandler,
   FlatList,
   Pressable,
   StyleSheet,
@@ -131,9 +132,12 @@ export default function PemutarMusik() {
     });
   }, []);
 
-  useEffect(() => {
-    useOverlayStore.getState().setVisible(false);
-  }, []);
+ useEffect(() => {
+  useOverlayStore.getState().setVisible(false);
+  return () => {
+    useOverlayStore.getState().setVisible(true);
+  };
+}, []);
 
   const idAktif = playlist[index]?.id;
 
@@ -403,12 +407,7 @@ export default function PemutarMusik() {
     <SafeAreaView style={styles.safeArea} edges={['bottom', 'left', 'right']}>
       <ThemedView style={styles.container}>
         <AppBar style={{ paddingTop: insets.top }}>
-          <Pressable
-            onPress={() => {
-              router.back();
-              useOverlayStore.getState().setVisible(true);
-            }}
-          >
+          <Pressable onPress={() => router.back()}>
             <MaterialIcons name="arrow-back" size={24} color="#010000" />
           </Pressable>
           <ThemedText>Pemutar Musik</ThemedText>

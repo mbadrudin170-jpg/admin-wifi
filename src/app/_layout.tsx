@@ -1,3 +1,5 @@
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
 import { useOverlayStore } from '@/store/overlay-store';
 import {
   getOrCreateAudioPlayer,
@@ -10,9 +12,9 @@ import { NavigationBar } from 'expo-navigation-bar';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { Modal, useColorScheme, View } from 'react-native';
+import { useColorScheme, View } from 'react-native';
+import { PaperProvider, Portal } from 'react-native-paper';
 import MyModule from '../../modules/my-module/src/MyModule';
-
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -84,32 +86,43 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="pemutar-musik" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="form-pelanggan-aktif"
-          options={{ title: 'Form Pelanggan Aktif' }}
-        />
-      </Stack>
 
-      <Modal
-        visible={overlayVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={overlayHide}
-      >
-        <View
-          style={{
-            flex: 1,
-            justifyContent: 'center',
-            alignItems: 'center',
-            backgroundColor: 'rgba(0,0,0,0.5)',
-          }}
-        >
-          {overlayChildren}
-        </View>
-      </Modal>
+      <PaperProvider>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="pemutar-musik" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="form-pelanggan-aktif"
+            options={{ title: 'Form Pelanggan Aktif' }}
+          />
+        </Stack>
+
+        <Portal>
+          {overlayVisible && (
+            <View
+              pointerEvents="box-none"
+              style={{
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                bottom: 0,
+                left: 0,
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
+              <ThemedView
+                style={{
+                  padding: 16,
+                  borderRadius: 12,
+                }}
+              >
+                {overlayChildren ?? <ThemedText>tes kan saja</ThemedText>}
+              </ThemedView>
+            </View>
+          )}
+        </Portal>
+      </PaperProvider>
     </ThemeProvider>
   );
 }
