@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { FlatList, Pressable, StyleSheet } from 'react-native';
-import * as MediaLibrary from 'expo-media-library';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -11,64 +10,19 @@ import {
 import { Spacing } from '@/constants/theme';
 import { router } from 'expo-router';
 import { setPlaylist } from '../pemutar-musik';
+import { usePlayerStore } from '@/store/player-store';
 import AppBar from '@/components/app-bar';
 
-type MusikLokal = {
-  id: string;
-  filename: string;
-  duration: number;
-};
-
 export default function ListMusik() {
-  const [musik, setMusik] = useState<MusikLokal[]>([]);
-  const [izin, setIzin] = useState<boolean | null>(null);
-  const [memuat, setMemuat] = useState(false);
+  const musik = usePlayerStore((s) => s.libraryMusik);
+  const izin = usePlayerStore((s) => s.hasPermission);
+  const memuat = usePlayerStore((s) => s.isLoadingLibrary);
+  const loadLibrary = usePlayerStore((s) => s.loadLibrary);
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
-    let aktif = true;
-
-    const muatMusik = async () => {
-      try {
-        setMemuat(true);
-        const permission = await MediaLibrary.requestPermissionsAsync();
-        if (!permission.granted) {
-          if (aktif) setIzin(false);
-          return;
-        }
-        if (aktif) setIzin(true);
-
-        const hasil = await new MediaLibrary.Query()
-          .eq(MediaLibrary.AssetField.MEDIA_TYPE, MediaLibrary.MediaType.AUDIO)
-          .orderBy({
-            key: MediaLibrary.AssetField.CREATION_TIME,
-            ascending: false,
-          })
-          .limit(200)
-          .exeForMetadata();
-
-        if (aktif) {
-          setMusik(
-            hasil.map((item) => ({
-              id: item.id,
-              filename: item.filename ?? 'Tanpa nama',
-              duration: item.duration ?? 0,
-            })),
-          );
-        }
-      } catch (error) {
-        console.error('Gagal memuat musik lokal:', error);
-      } finally {
-        if (aktif) setMemuat(false);
-      }
-    };
-
-    void muatMusik();
-
-    return () => {
-      aktif = false;
-    };
-  }, []);
+    void loadLibrary();
+  }, [loadLibrary]);
 
   const formatDurasi = (detik: number) => {
     const menit = Math.floor(detik / 60);

@@ -1,44 +1,89 @@
 import { create } from 'zustand';
+import * as MediaLibrary from 'expo-media-library';
 
-/** Item playlist: id aset MediaLibrary, nama file, durasi detik. */
 export type PlaylistItem = { id: string; filename: string; duration: number };
 
 type PlayerState = {
-  /** Daftar lagu yang antre diputar. */
   playlist: PlaylistItem[];
-  /** Index lagu yang sedang aktif (0-based). */
   index: number;
-  /** Ganti seluruh playlist & set index awal. */
   setPlaylist: (items: PlaylistItem[], index: number) => void;
-  /** Ubah index lagu aktif (mis. next/prev). */
   setIndex: (index: number) => void;
+
+  libraryMusik: PlaylistItem[];
+  isLoadingLibrary: boolean;
+  libraryError: string | null;
+  hasPermission: boolean | null;
+  loadLibrary: () => Promise<void>;
+  _setLibrary: (items: PlaylistItem[]) => void;
+  _setLibraryLoading: (v: boolean) => void;
+  _setLibraryError: (e: string | null) => void;
+  _setHasPermission: (v: boolean | null) => void;
 };
 
 export const usePlayerStore = create<PlayerState>((set) => ({
   playlist: [],
   index: 0,
-  /** Action internal: replace playlist & index. */
   setPlaylist: (items, index) => set({ playlist: items, index }),
-  /** Action internal: ganti index saja. */
   setIndex: (index) => set({ index }),
+
+  libraryMusik: [],
+  isLoadingLibrary: false,
+  libraryError: null,
+  hasPermission: null,
+  _setLibrary: (items) => set({ libraryMusik: items }),
+  _setLibraryLoading: (v) => set({ isLoadingLibrary: v }),
+  _setLibraryError: (e) => set({ libraryError: e }),
+  _setHasPermission: (v) => set({ hasPermission: v }),
+  loadLibrary: async () => {
+    const state = usePlayerStore.getState();
+    state._setLibraryLoading(true);
+    state._setLibraryError(null);
+    try {
+      const permission = await MediaLibrary.requestPermissionsAsync();
+      if (!permission.granted) {
+        state._setHasPermission(false);
+        state._setLibraryError('Izin akses media ditolak');
+        state._setLibrary([]);
+        return;
+      }
+      state._setHasPermission(true);
+      const hasil = await new MediaLibrary.Query()
+        .eq(MediaLibrary.AssetField.MEDIA_TYPE, MediaLibrary.MediaType.AUDIO)
+        .orderBy({
+          key: MediaLibrary.AssetField.CREATION_TIME,
+          ascending: false,
+        })
+        .limit(200)
+        .exeForMetadata();
+
+      const items: PlaylistItem[] = hasil.map((item) => ({
+        id: item.id,
+        filename: item.filename ?? 'Tanpa nama',
+        duration: item.duration ?? 0,
+      }));
+      state._setLibrary(items);
+    } catch (error) {
+      console.error('Gagal memuat musik lokal:', error);
+      state._setLibraryError('Gagal memuat musik');
+      state._setLibrary([]);
+    } finally {
+      state._setLibraryLoading(false);
+    }
+  },
 }));
 
-/** Helper: set playlist dari luar (list-musik.tsx). */
 export function setPlaylist(items: PlaylistItem[], index: number) {
   usePlayerStore.getState().setPlaylist(items, index);
 }
 
-/** Helper: ambil playlist saat ini (non-reactive, untuk logic async). */
 export function getPlaylist() {
   return usePlayerStore.getState().playlist;
 }
 
-/** Helper: ambil index aktif saat ini (non-reactive). */
 export function getPlaylistIndex() {
   return usePlayerStore.getState().index;
 }
 
-/** Helper: set index playlist (auto-advance, skip-next/prev). */
 export function setPlaylistIndex(index: number) {
   usePlayerStore.getState().setIndex(index);
 }
