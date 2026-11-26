@@ -23,7 +23,7 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
-import { Colors, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import AppBar from '@/components/app-bar';
 
@@ -110,7 +110,6 @@ function formatWaktu(detik: number) {
 
 export default function PemutarMusik() {
   const scheme = useColorScheme();
-  const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
   const { id, judul } = useLocalSearchParams<{ id?: string; judul?: string }>();
   const playlistAwal = getPlaylist();
   const indeksAwal = getPlaylistIndex();
@@ -121,7 +120,6 @@ export default function PemutarMusik() {
   const player = dapatkanPlayer();
   const insets = useSafeAreaInsets();
   const status = useAudioPlayerStatus(player);
-  const [lebarProgress, setLebarProgress] = useState(0);
 
   const scrollRef = useRef<any>(null);
   const lineMetrics = useRef<{ y: number; height: number }[]>([]);
@@ -352,24 +350,8 @@ export default function PemutarMusik() {
     };
   }, [status.didJustFinish]);
 
-  const progres =
-    status.duration > 0
-      ? Math.min(1, Math.max(0, status.currentTime / status.duration))
-      : 0;
-
-  const seekKe = (x: number) => {
-    if (lebarProgress <= 0 || status.duration <= 0) return;
-    const rasio = Math.min(1, Math.max(0, x / lebarProgress));
-    const target = rasio * status.duration;
-    console.log('PemutarMusik: seek', { x, rasio, target });
-    void player.seekTo(target);
-  };
-
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom', 'left', 'right']}>
-      <StatusBar
-        barStyle={scheme === 'dark' ? 'light-content' : 'dark-content'}
-      />
       <ThemedView style={styles.container}>
         <AppBar style={{ paddingTop: insets.top }}>
           <Pressable onPress={() => router.back()}>
@@ -403,22 +385,7 @@ export default function PemutarMusik() {
             }}
             minimumTrackTintColor="#1DB954"
             maximumTrackTintColor="#777777"
-          />{' '}
-          <Pressable
-            style={[
-              styles.progressTrack,
-              { backgroundColor: colors.backgroundSelected },
-            ]}
-            onLayout={(e) => setLebarProgress(e.nativeEvent.layout.width)}
-            onPress={(e) => seekKe(e.nativeEvent.locationX)}
-          >
-            <View
-              style={[
-                styles.progressFill,
-                { width: `${progres * 100}%`, backgroundColor: colors.text },
-              ]}
-            />
-          </Pressable>
+          />
           <View style={styles.waktuRow}>
             <ThemedText type="small">
               {formatWaktu(status.currentTime)}

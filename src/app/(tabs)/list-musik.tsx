@@ -4,7 +4,10 @@ import * as MediaLibrary from 'expo-media-library';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { Spacing } from '@/constants/theme';
 import { router } from 'expo-router';
 import { setPlaylist } from '../pemutar-musik';
@@ -20,6 +23,7 @@ export default function ListMusik() {
   const [musik, setMusik] = useState<MusikLokal[]>([]);
   const [izin, setIzin] = useState<boolean | null>(null);
   const [memuat, setMemuat] = useState(false);
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     let aktif = true;
@@ -73,8 +77,8 @@ export default function ListMusik() {
   };
 
   return (
-    <SafeAreaView edges={['bottom', 'left', 'top']} style={styles.container}>
-      <AppBar>
+    <SafeAreaView edges={['bottom', 'left', 'right']} style={styles.container}>
+      <AppBar style={{ paddingTop: insets.top }}>
         <ThemedText>Daftar Lagu</ThemedText>
       </AppBar>
       <ThemedView style={styles.card}>
@@ -129,7 +133,7 @@ const styles = StyleSheet.create({
   },
   card: {
     flex: 1,
-    padding: Spacing.four,
+    paddingHorizontal: Spacing.two,
     gap: Spacing.three,
   },
   title: {
