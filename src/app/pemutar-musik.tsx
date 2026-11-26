@@ -358,6 +358,10 @@ export default function PemutarMusik() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ThemedView style={styles.container}>
+        <ThemedView>
+          <ThemedText>Pemutar Musik</ThemedText>
+        </ThemedView>
+
         <View style={styles.artwork}>
           <ThemedText style={styles.artworkIcon}>♪</ThemedText>
         </View>
@@ -389,7 +393,7 @@ export default function PemutarMusik() {
               ]}
             />
           </Pressable>
-          
+
           <View style={styles.waktuRow}>
             <ThemedText type="small">
               {formatWaktu(status.currentTime)}

@@ -38,6 +38,10 @@ export default function RootLayout() {
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
+          name="pemutar-musik"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
           name="form-pelanggan-aktif"
           options={{ title: "Form Pelanggan Aktif" }}
         />
