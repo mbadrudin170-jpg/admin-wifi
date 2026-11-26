@@ -1,17 +1,17 @@
 import { useEffect } from 'react';
 import { FlatList, Pressable, StyleSheet } from 'react-native';
 
+import AppBar from '@/components/app-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { Spacing } from '@/constants/theme';
+import { usePlayerStore } from '@/store/player-store';
+import { router } from 'expo-router';
 import {
   SafeAreaView,
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
-import { Spacing } from '@/constants/theme';
-import { router } from 'expo-router';
 import { setPlaylist } from '../pemutar-musik';
-import { usePlayerStore } from '@/store/player-store';
-import AppBar from '@/components/app-bar';
 
 export default function ListMusik() {
   const musik = usePlayerStore((s) => s.libraryMusik);
@@ -66,10 +66,7 @@ export default function ListMusik() {
                 style={styles.row}
                 onPress={() => {
                   setPlaylist(musik, index);
-                  router.push({
-                    pathname: '/pemutar-musik',
-                    params: { id: item.id, judul: item.filename },
-                  });
+                  router.push('/pemutar-musik');
                 }}
               >
                 <ThemedText type="default" style={styles.nama}>
