@@ -17,14 +17,26 @@ jobs:
       - name: Install dependencies
         run: bun install
 
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          accept-android-sdk-licenses: true
+          packages: platform-tools
 
-      - name: Build Android development APK
-        run: bunx expo run:android --device --variant debug
+      - name: Prebuild Android (CNG)
+        run: bunx expo prebuild --platform android --non-interactive
+
+      - name: Build debug APK
+        run: cd android && ./gradlew assembleDebug
         env:
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
           NODE_ENV: development
-          EAS_NO_VCS: true
 
       - name: Locate APK
         run: find android/app/build/outputs -name "*.apk" -type f 2>/dev/null || true
@@ -34,5 +46,5 @@ jobs:
         if: always()
         with:
           name: android-development-apk
-          path: android/app/build/outputs/apk/**/*.apk
+          path: android/app/build/outputs/apk/debug/*.apk
           retention-days: 7
