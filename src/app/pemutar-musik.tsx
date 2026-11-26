@@ -366,7 +366,9 @@ export default function PemutarMusik() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom', 'left', 'right']}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar
+        barStyle={scheme === 'dark' ? 'light-content' : 'dark-content'}
+      />
       <ThemedView style={styles.container}>
         <AppBar style={{ paddingTop: insets.top }}>
           <Pressable onPress={() => router.back()}>
