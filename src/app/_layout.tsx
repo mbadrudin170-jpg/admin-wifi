@@ -3,7 +3,14 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { useColorScheme } from 'react-native';
 import { NavigationBar } from 'expo-navigation-bar';
 import { StatusBar } from 'expo-status-bar';
+import * as MediaLibrary from 'expo-media-library';
 import MyModule from '../../modules/my-module/src/MyModule';
+import {
+  dapatkanPlayer,
+  getPlaylist,
+  getPlaylistIndex,
+  setPlaylistIndex,
+} from './pemutar-musik';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -36,6 +43,37 @@ export default function RootLayout() {
       }
     });
 
+    return () => subscription.remove();
+  }, []);
+
+  // Auto-advance global: saat layar pemutar tidak aktif, tetap lanjut ke lagu berikutnya.
+  useEffect(() => {
+    const player = dapatkanPlayer();
+    const subscription = player.addListener('playbackStatusUpdate', (status: any) => {
+      if (!status?.didJustFinish) return;
+      if ((globalThis as { __pemutarMusikMounted?: boolean }).__pemutarMusikMounted) {
+        return;
+      }
+      const daftar = getPlaylist();
+      const indeksBerikut = getPlaylistIndex() + 1;
+      if (indeksBerikut >= daftar.length) return;
+      const berikut = daftar[indeksBerikut];
+      setPlaylistIndex(indeksBerikut);
+      const muat = async () => {
+        try {
+          const info = await new MediaLibrary.Asset(berikut.id).getInfo();
+          if (info?.uri) {
+            player.pause();
+            player.replace(info.uri);
+            player.setActiveForLockScreen(true, { title: berikut.filename });
+            player.play();
+          }
+        } catch (e) {
+          console.log('RootLayout: gagal memuat lagu berikutnya', e);
+        }
+      };
+      void muat();
+    });
     return () => subscription.remove();
   }, []);
 

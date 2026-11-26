@@ -57,7 +57,7 @@ export function setPlaylistIndex(index: number) {
   globalPlaylist.__playlistIndex = index;
 }
 
-function dapatkanPlayer() {
+export function dapatkanPlayer() {
   if (!globalAudio.__audioPlayerGlobal) {
     globalAudio.__audioPlayerGlobal = createAudioPlayer(null);
   }
@@ -120,6 +120,13 @@ export default function PemutarMusik() {
   const player = dapatkanPlayer();
   const insets = useSafeAreaInsets();
   const status = useAudioPlayerStatus(player);
+
+  useEffect(() => {
+    (globalThis as { __pemutarMusikMounted?: boolean }).__pemutarMusikMounted = true;
+    return () => {
+      (globalThis as { __pemutarMusikMounted?: boolean }).__pemutarMusikMounted = false;
+    };
+  }, []);
 
   const scrollRef = useRef<any>(null);
   const lineMetrics = useRef<{ y: number; height: number }[]>([]);
