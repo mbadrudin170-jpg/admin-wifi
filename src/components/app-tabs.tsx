@@ -37,7 +37,7 @@ export default function AppTabs() {
           renderingMode="template"
         />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="list-musik">
+      <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Label>List Musik</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           src={
