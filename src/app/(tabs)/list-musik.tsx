@@ -77,8 +77,14 @@ export default function ListMusik() {
   };
 
   return (
-    <SafeAreaView edges={['bottom', 'left', 'right']} style={styles.container}>
-      <AppBar style={{ paddingTop: insets.top }}>
+    <SafeAreaView edges={['left', 'right']} style={styles.container}>
+      <AppBar
+        style={{
+          paddingTop: 8 + insets.top,
+          paddingBottom: Spacing.two,
+          justifyContent: 'center',
+        }}
+      >
         <ThemedText>Daftar Lagu</ThemedText>
       </AppBar>
       <ThemedView style={styles.card}>
