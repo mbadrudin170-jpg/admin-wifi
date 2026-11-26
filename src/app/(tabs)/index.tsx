@@ -5,13 +5,12 @@ import AppBar from '@/components/app-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { usePlayerStore } from '@/store/player-store';
+import { setPlaylist, usePlayerStore } from '@/store/player-store';
 import { router } from 'expo-router';
 import {
   SafeAreaView,
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
-import { setPlaylist } from '../pemutar-musik';
 
 const viewabilityConfig = {
   itemVisiblePercentThreshold: 1,

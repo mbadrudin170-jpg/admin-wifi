@@ -33,8 +33,6 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
-export { setPlaylist } from '@/store/player-store';
-export type { PlaylistItem } from '@/store/player-store';
 
 type LirikBaris = { waktu: number; teks: string };
 
