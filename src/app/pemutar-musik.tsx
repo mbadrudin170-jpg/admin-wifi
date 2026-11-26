@@ -97,9 +97,6 @@ function formatWaktu(detik: number) {
 export default function PemutarMusik() {
   const scheme = useColorScheme();
   const { id, judul } = useLocalSearchParams<{ id?: string; judul?: string }>();
-  const playlistAwal = getPlaylist();
-  const indeksAwal = getPlaylistIndex();
-  const laguAwal = playlistAwal[indeksAwal];
   const playlist = usePlayerStore((s) => s.playlist);
   const index = usePlayerStore((s) => s.index);
   const judulAktif = playlist[index]?.filename ?? 'Pemutar Musik';
@@ -108,16 +105,6 @@ export default function PemutarMusik() {
   const insets = useSafeAreaInsets();
   const status = useAudioPlayerStatus(player);
 
-  useEffect(() => {
-    (globalThis as { __pemutarMusikMounted?: boolean }).__pemutarMusikMounted =
-      true;
-    return () => {
-      (
-        globalThis as { __pemutarMusikMounted?: boolean }
-      ).__pemutarMusikMounted = false;
-    };
-  }, []);
-
   const scrollRef = useRef<any>(null);
   const lineMetrics = useRef<{ y: number; height: number }[]>([]);
   const lastLirikIndex = useRef<number>(-1);
@@ -125,7 +112,9 @@ export default function PemutarMusik() {
   const [lirik, setLirik] = useState<LirikBaris[]>([]);
   const [memuatLirik, setMemuatLirik] = useState(false);
   const [pesanLirik, setPesanLirik] = useState<string | null>(null);
-
+  const [sliderValue, setSliderValue] = useState(status.currentTime);
+  const sliderRef = useRef(status.currentTime);
+  const [isSliding, setIsSliding] = useState(false);
   const mainkanSelanjutnya = async () => {
     const daftar = getPlaylist();
     const indeksBerikut = getPlaylistIndex() + 1;
@@ -147,6 +136,16 @@ export default function PemutarMusik() {
       console.log('PemutarMusik: gagal memutar selanjutnya', e);
     }
   };
+
+  useEffect(() => {
+    (globalThis as { __pemutarMusikMounted?: boolean }).__pemutarMusikMounted =
+      true;
+    return () => {
+      (
+        globalThis as { __pemutarMusikMounted?: boolean }
+      ).__pemutarMusikMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     void setAudioModeAsync({
@@ -448,8 +447,17 @@ export default function PemutarMusik() {
           <Slider
             minimumValue={0}
             maximumValue={status.duration || 1}
-            value={status.currentTime}
+            value={isSliding ? sliderRef.current : status.currentTime}
+            onSlidingStart={() => {
+              setIsSliding(true);
+              sliderRef.current = status.currentTime;
+            }}
+            onValueChange={(v) => {
+              sliderRef.current = v;
+            }}
             onSlidingComplete={(value) => {
+              setIsSliding(false);
+              sliderRef.current = value;
               player.seekTo(value);
             }}
             minimumTrackTintColor="#1DB954"
