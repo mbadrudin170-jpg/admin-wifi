@@ -11,7 +11,15 @@ type AppBarProps = {
 export default function AppBar({ children, style }: AppBarProps) {
   return (
     <ThemedView
-      style={[{ flexDirection: 'row', justifyContent: 'flex-start' }, style]}
+      style={[
+        {
+          flexDirection: 'row',
+          justifyContent: 'flex-start',
+          width: '100%',
+          alignItems: 'center',
+        },
+        style,
+      ]}
     >
       {children}
     </ThemedView>

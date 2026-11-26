@@ -372,7 +372,7 @@ export default function PemutarMusik() {
       <ThemedView style={styles.container}>
         <AppBar style={{ paddingTop: insets.top }}>
           <Pressable onPress={() => router.back()}>
-            <MaterialIcons name="arrow-back" size={24} color="white" />
+            <MaterialIcons name="arrow-back" size={24} color="#010000" />
           </Pressable>
           <ThemedText>Pemutar Musik</ThemedText>
         </AppBar>
