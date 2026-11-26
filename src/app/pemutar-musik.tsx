@@ -126,6 +126,28 @@ export default function PemutarMusik() {
   const [memuatLirik, setMemuatLirik] = useState(false);
   const [pesanLirik, setPesanLirik] = useState<string | null>(null);
 
+  const mainkanSelanjutnya = async () => {
+    const daftar = getPlaylist();
+    const indeksBerikut = getPlaylistIndex() + 1;
+    if (indeksBerikut >= daftar.length) return;
+
+    const berikut = daftar[indeksBerikut];
+    setPlaylistIndex(indeksBerikut);
+
+    try {
+      const info = await new MediaLibrary.Asset(berikut.id).getInfo();
+      if (info?.uri) {
+        player.pause();
+        player.replace(info.uri);
+        player.setActiveForLockScreen(true, { title: berikut.filename });
+        player.play();
+      }
+      console.log(info);
+    } catch (e) {
+      console.log('PemutarMusik: gagal memutar selanjutnya', e);
+    }
+  };
+
   useEffect(() => {
     void setAudioModeAsync({
       playsInSilentMode: true,
@@ -422,13 +444,6 @@ export default function PemutarMusik() {
         <ThemedText type="title" style={styles.judul} numberOfLines={2}>
           {judulAktif}
         </ThemedText>
-        <ThemedText type="small" style={styles.subjudul}>
-          {status.isBuffering
-            ? 'Memuat...'
-            : status.playing
-              ? 'Sedang diputar'
-              : 'Siap diputar'}
-        </ThemedText>
 
         <View style={styles.progressWrap}>
           <Slider
@@ -450,26 +465,27 @@ export default function PemutarMusik() {
         </View>
 
         <View style={styles.kontrol}>
-          <Button
-            title="Ulang"
+          <Pressable>
+            <MaterialIcons name="skip-previous" size={32} />
+          </Pressable>
+          <Pressable
             onPress={() => {
-              console.log('PemutarMusik: tombol Ulang');
-              void player.seekTo(0);
-              player.play();
+              console.log(
+                'PemutarMusik: tombol',
+                status.playing ? 'Jeda' : 'Putar',
+              );
+              status.playing ? player.pause() : player.play();
             }}
-          />
-          <View style={styles.playButton}>
-            <Button
-              title={status.playing ? 'Jeda' : 'Putar'}
-              onPress={() => {
-                console.log(
-                  'PemutarMusik: tombol',
-                  status.playing ? 'Jeda' : 'Putar',
-                );
-                status.playing ? player.pause() : player.play();
-              }}
+          >
+            <MaterialIcons
+              name={status.playing ? 'pause' : 'play-arrow'}
+              accessibilityLabel={status.playing ? 'Jeda' : 'Putar'}
+              size={32}
             />
-          </View>
+          </Pressable>
+          <Pressable onPress={mainkanSelanjutnya}>
+            <MaterialIcons name="skip-next" size={32} />
+          </Pressable>
         </View>
 
         <View style={styles.lirikBox}>
@@ -560,18 +576,21 @@ const styles = StyleSheet.create({
   waktuRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    paddingHorizontal: 12,
   },
   kontrol: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.three,
+    justifyContent: 'space-between',
+    width: '80%',
+    paddingHorizontal: Spacing.five,
   },
   playButton: {
     minWidth: 96,
   },
   lirikBox: {
     width: '100%',
-    maxHeight: 220,
+    flex: 1,
     gap: Spacing.two,
   },
   lirikJudul: {
@@ -583,7 +602,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   lirikScroll: {
-    maxHeight: 180,
+    flex: 1,
   },
   lirikBaris: {
     textAlign: 'center',
