@@ -1,18 +1,25 @@
 import { useEffect } from 'react';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { useColorScheme } from 'react-native';
+import { Modal, View } from 'react-native';
 import { NavigationBar } from 'expo-navigation-bar';
 import { StatusBar } from 'expo-status-bar';
 import * as MediaLibrary from 'expo-media-library';
 import MyModule from '../../modules/my-module/src/MyModule';
+import { dapatkanPlayer } from './pemutar-musik';
 import {
-  dapatkanPlayer,
-} from './pemutar-musik';
-import { getPlaylist, getPlaylistIndex, setPlaylistIndex } from '@/store/player-store';
+  getPlaylist,
+  getPlaylistIndex,
+  setPlaylistIndex,
+} from '@/store/player-store';
+import { useOverlayStore } from '@/store/overlay-store';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const overlayVisible = useOverlayStore((s) => s.visible);
+  const overlayChildren = useOverlayStore((s) => s.children);
+  const overlayHide = useOverlayStore((s) => s.hide);
 
   useEffect(() => {
     NavigationBar.setStyle(isDark ? 'light' : 'dark');
@@ -47,31 +54,37 @@ export default function RootLayout() {
   // Auto-advance global: saat layar pemutar tidak aktif, tetap lanjut ke lagu berikutnya.
   useEffect(() => {
     const player = dapatkanPlayer();
-    const subscription = player.addListener('playbackStatusUpdate', (status: any) => {
-      if (!status?.didJustFinish) return;
-      if ((globalThis as { __pemutarMusikMounted?: boolean }).__pemutarMusikMounted) {
-        return;
-      }
-      const daftar = getPlaylist();
-      const indeksBerikut = getPlaylistIndex() + 1;
-      if (indeksBerikut >= daftar.length) return;
-      const berikut = daftar[indeksBerikut];
-      setPlaylistIndex(indeksBerikut);
-      const muat = async () => {
-        try {
-          const info = await new MediaLibrary.Asset(berikut.id).getInfo();
-          if (info?.uri) {
-            player.pause();
-            player.replace(info.uri);
-            player.setActiveForLockScreen(true, { title: berikut.filename });
-            player.play();
-          }
-        } catch (e) {
-          console.log('RootLayout: gagal memuat lagu berikutnya', e);
+    const subscription = player.addListener(
+      'playbackStatusUpdate',
+      (status: any) => {
+        if (!status?.didJustFinish) return;
+        if (
+          (globalThis as { __pemutarMusikMounted?: boolean })
+            .__pemutarMusikMounted
+        ) {
+          return;
         }
-      };
-      void muat();
-    });
+        const daftar = getPlaylist();
+        const indeksBerikut = getPlaylistIndex() + 1;
+        if (indeksBerikut >= daftar.length) return;
+        const berikut = daftar[indeksBerikut];
+        setPlaylistIndex(indeksBerikut);
+        const muat = async () => {
+          try {
+            const info = await new MediaLibrary.Asset(berikut.id).getInfo();
+            if (info?.uri) {
+              player.pause();
+              player.replace(info.uri);
+              player.setActiveForLockScreen(true, { title: berikut.filename });
+              player.play();
+            }
+          } catch (e) {
+            console.log('RootLayout: gagal memuat lagu berikutnya', e);
+          }
+        };
+        void muat();
+      },
+    );
     return () => subscription.remove();
   }, []);
 
@@ -86,6 +99,24 @@ export default function RootLayout() {
           options={{ title: 'Form Pelanggan Aktif' }}
         />
       </Stack>
+
+      <Modal
+        visible={overlayVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={overlayHide}
+      >
+        <View
+          style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: 'rgba(0,0,0,0.5)',
+          }}
+        >
+          {overlayChildren}
+        </View>
+      </Modal>
     </ThemeProvider>
   );
 }
