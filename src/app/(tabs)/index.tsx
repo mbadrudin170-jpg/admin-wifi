@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { FlatList, Pressable, StyleSheet } from 'react-native';
 
 import AppBar from '@/components/app-bar';
@@ -13,6 +13,10 @@ import {
 } from 'react-native-safe-area-context';
 import { setPlaylist } from '../pemutar-musik';
 
+const viewabilityConfig = {
+  itemVisiblePercentThreshold: 1,
+};
+
 export default function ListMusik() {
   const musik = usePlayerStore((s) => s.libraryMusik);
   const izin = usePlayerStore((s) => s.hasPermission);
@@ -20,6 +24,62 @@ export default function ListMusik() {
   const loadLibrary = usePlayerStore((s) => s.loadLibrary);
   const loadMore = usePlayerStore((s) => s.loadMoreLibrary);
   const insets = useSafeAreaInsets();
+
+  const loadMoreLock = useRef(false);
+
+  const paginationRef = useRef({
+    length: musik.length,
+    memuat,
+    loadMore,
+  });
+
+  useEffect(() => {
+    paginationRef.current = {
+      length: musik.length,
+      memuat,
+      loadMore,
+    };
+  }, [musik, memuat, loadMore]);
+
+  const onViewableItemsChanged = useCallback(
+    ({
+      viewableItems,
+    }: {
+      viewableItems: { index: number | undefined; isViewable: boolean }[];
+    }) => {
+      const {
+        length,
+        memuat: sedangMemuat,
+        loadMore: muatLagi,
+      } = paginationRef.current;
+
+      if (sedangMemuat || length === 0 || loadMoreLock.current) {
+        return;
+      }
+
+      const itemTerakhirTerlihat = viewableItems.some(
+        (item) =>
+          item.isViewable &&
+          item.index !== undefined &&
+          item.index === length - 1,
+      );
+
+      if (!itemTerakhirTerlihat) return;
+
+      loadMoreLock.current = true;
+
+      void Promise.resolve(muatLagi()).then(
+        () => {
+          loadMoreLock.current = false;
+        },
+        (error) => {
+          loadMoreLock.current = false;
+          console.error('Gagal memuat musik berikutnya:', error);
+        },
+      );
+    },
+    [], // read from refs only; refs don't trigger re-render
+  );
 
   useEffect(() => {
     void loadLibrary();
@@ -58,12 +118,8 @@ export default function ListMusik() {
                 {memuat ? 'Memuat musik...' : 'Tidak ada musik ditemukan'}
               </ThemedText>
             }
-            onEndReached={() => {
-              if (!memuat) {
-                void loadMore();
-              }
-            }}
-            onEndReachedThreshold={0.5}
+            viewabilityConfig={viewabilityConfig}
+            onViewableItemsChanged={onViewableItemsChanged}
             ListFooterComponent={
               memuat && musik.length > 0 ? (
                 <ThemedText type="small" style={styles.empty}>

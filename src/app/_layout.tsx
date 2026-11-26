@@ -1,4 +1,4 @@
-import { ThemedText } from '@/components/themed-text';
+import { MarqueeText } from '@/components/marquee-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { useOverlayStore } from '@/store/overlay-store';
@@ -10,6 +10,7 @@ import {
   usePlayerStore,
 } from '@/store/player-store';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { Platform } from 'expo';
 import { useAudioPlayerStatus } from 'expo-audio';
 import * as MediaLibrary from 'expo-media-library';
 import { NavigationBar } from 'expo-navigation-bar';
@@ -123,17 +124,33 @@ export default function RootLayout() {
             >
               <ThemedView
                 style={{
-                  borderRadius: 12,
                   justifyContent: 'space-between',
                   flexDirection: 'row',
                   width: '100%',
+                  borderRadius: 12,
+                  overflow: 'hidden',
                   paddingHorizontal: 20,
                   paddingVertical: 12,
+                  ...Platform.select({
+                    ios: {
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.1,
+                      shadowRadius: 6,
+                    },
+                    android: {
+                      elevation: 4,
+                    },
+                  }),
                 }}
               >
-                <ThemedText style={{ flex: 1 }}>
-                  {playlist[index]?.filename ?? 'Pemutar Musik'}
-                </ThemedText>
+                <MarqueeText
+                  containerStyle={{ flex: 1 }}
+                  style={{ color: iconColor }}
+                  text={playlist[index]?.filename ?? 'Pemutar Musik'}
+                  speed={40}
+                  pause={800}
+                />
 
                 <ThemedView style={{ flexDirection: 'row', gap: 8 }}>
                   <Pressable>
