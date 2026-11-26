@@ -1,38 +1,30 @@
-import { useEffect, useRef, useState } from 'react';
 import Slider from '@react-native-community/slider';
-import {
-  Button,
-  FlatList,
-  Pressable,
-  StatusBar,
-  StyleSheet,
-  View,
-} from 'react-native';
-import { useColorScheme } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
-import * as MediaLibrary from 'expo-media-library';
 import {
   createAudioPlayer,
   setAudioModeAsync,
   useAudioPlayerStatus,
 } from 'expo-audio';
+import * as MediaLibrary from 'expo-media-library';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
+import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 
-import { Image } from 'expo-image';
+import AppBar from '@/components/app-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { Spacing } from '@/constants/theme';
 import {
   getPlaylist,
   getPlaylistIndex,
   setPlaylistIndex,
+  usePlayerStore,
 } from '@/store/player-store';
-import { Spacing } from '@/constants/theme';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { Image } from 'expo-image';
 import {
   SafeAreaView,
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import AppBar from '@/components/app-bar';
-import { usePlayerStore } from '@/store/player-store';
 // Player disimpan di globalThis agar tetap hidup saat Fast Refresh/hot reload.
 const globalAudio = globalThis as {
   __audioPlayerGlobal?: ReturnType<typeof createAudioPlayer>;
@@ -95,7 +87,6 @@ function formatWaktu(detik: number) {
 }
 
 export default function PemutarMusik() {
-  const scheme = useColorScheme();
   const { id, judul } = useLocalSearchParams<{ id?: string; judul?: string }>();
   const playlist = usePlayerStore((s) => s.playlist);
   const index = usePlayerStore((s) => s.index);
@@ -112,7 +103,6 @@ export default function PemutarMusik() {
   const [lirik, setLirik] = useState<LirikBaris[]>([]);
   const [memuatLirik, setMemuatLirik] = useState(false);
   const [pesanLirik, setPesanLirik] = useState<string | null>(null);
-  const [sliderValue, setSliderValue] = useState(status.currentTime);
   const sliderRef = useRef(status.currentTime);
   const [isSliding, setIsSliding] = useState(false);
   const mainkanSelanjutnya = async () => {

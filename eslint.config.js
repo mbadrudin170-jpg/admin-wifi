@@ -5,6 +5,14 @@ const expoConfig = require('eslint-config-expo/flat');
 module.exports = defineConfig([
   expoConfig,
   {
-    ignores: ['dist/*'],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.json'],
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-deprecated': 'warn',
+    },
   },
+  { ignores: ['dist/*'] },
 ]);
