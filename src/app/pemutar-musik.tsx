@@ -20,7 +20,11 @@ import {
 import { Image } from 'expo-image';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { getPlaylist, getPlaylistIndex, setPlaylistIndex } from '@/store/player-store';
+import {
+  getPlaylist,
+  getPlaylistIndex,
+  setPlaylistIndex,
+} from '@/store/player-store';
 import { Spacing } from '@/constants/theme';
 import {
   SafeAreaView,
