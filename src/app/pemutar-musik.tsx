@@ -190,7 +190,7 @@ export default function PemutarMusik() {
     return () => {
       aktif = false;
     };
-  }, [id, player]);
+  }, [id, player, judul]);
 
   useEffect(() => {
     let aktif = true;
@@ -299,7 +299,7 @@ export default function PemutarMusik() {
     return () => {
       aktif = false;
     };
-  }, [judulAktif]);
+  }, [judulAktif, judul]);
 
   useEffect(() => {
     let aktif = true;
@@ -349,7 +349,7 @@ export default function PemutarMusik() {
     return () => {
       aktif = false;
     };
-  }, [judulAktif]);
+  }, [judulAktif, judul]);
 
   useEffect(() => {
     lineMetrics.current = new Array(lirik.length)
@@ -419,7 +419,7 @@ export default function PemutarMusik() {
     return () => {
       aktif = false;
     };
-  }, [status.didJustFinish]);
+  }, [status.didJustFinish, player]);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom', 'left', 'right']}>
@@ -487,7 +487,11 @@ export default function PemutarMusik() {
                 'PemutarMusik: tombol',
                 status.playing ? 'Jeda' : 'Putar',
               );
-              status.playing ? player.pause() : player.play();
+              if (status.playing) {
+                player.pause();
+              } else {
+                player.play();
+              }
             }}
           >
             <MaterialIcons
