@@ -49,6 +49,12 @@ export type OpsiFormatUang = {
   locale?: string;
 };
 
+export function formatDurasi(detik: number): string {
+  if (!Number.isFinite(detik) || detik < 0) return '0:00';
+  const menit = Math.floor(detik / 60);
+  const sisa = Math.floor(detik % 60);
+  return `${menit}:${sisa.toString().padStart(2, '0')}`;
+}
 export function formatUang(nilai: number, opsi: OpsiFormatUang = {}): string {
   const { mataUang = 'IDR', desimal = 0, locale = localeId } = opsi;
   return new Intl.NumberFormat(locale, {

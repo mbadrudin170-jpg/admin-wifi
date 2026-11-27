@@ -5,6 +5,7 @@ import AppBar from '@/components/app-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
+import { formatDurasi } from '@/utils/format';
 import { setPlaylist, usePlayerStore } from '@/store/player-store';
 import { router } from 'expo-router';
 import {
@@ -84,12 +85,6 @@ export default function ListMusik() {
     void loadLibrary();
   }, [loadLibrary]);
 
-  const formatDurasi = (detik: number) => {
-    const menit = Math.floor(detik / 60);
-    const sisa = Math.floor(detik % 60);
-    return `${menit}:${sisa.toString().padStart(2, '0')}`;
-  };
-
   return (
     <SafeAreaView edges={['left', 'right']} style={styles.container}>
       <AppBar
@@ -126,7 +121,8 @@ export default function ListMusik() {
                 </ThemedText>
               ) : undefined
             }
-            renderItem={({ item, index }) => (
+            renderItem={({ item, index }) => {
+              return (
               <Pressable
                 style={styles.row}
                 onPress={() => {
@@ -151,11 +147,12 @@ export default function ListMusik() {
                     {item.filename}
                   </ThemedText>
                   <ThemedText type="small" style={styles.meta}>
-                    Durasi {formatDurasi(item.duration)}
+                    Durasi {formatDurasi((item.duration ?? 0) / 1000)}
                   </ThemedText>
                 </View>
               </Pressable>
-            )}
+            );
+          }}
           />
         )}
       </ThemedView>
