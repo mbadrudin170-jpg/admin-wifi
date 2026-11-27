@@ -1,4 +1,4 @@
-import { MarqueeText } from '@/components/marquee-text';
+import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { useOverlayStore } from '@/store/overlay-store';
@@ -9,6 +9,7 @@ import {
   setPlaylistIndex,
   usePlayerStore,
 } from '@/store/player-store';
+import { Marquee } from '@animatereactnative/marquee';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Platform } from 'expo';
 import { useAudioPlayerStatus } from 'expo-audio';
@@ -98,107 +99,114 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
-      <StatusBar style={isDark ? 'light' : 'dark'} />
-      <PaperProvider>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="pemutar-musik" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="form-pelanggan-aktif"
-            options={{ title: 'Form Pelanggan Aktif' }}
-          />
-        </Stack>
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+        <PaperProvider>
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="pemutar-musik"
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="form-pelanggan-aktif"
+              options={{ title: 'Form Pelanggan Aktif' }}
+            />
+          </Stack>
 
-        <Portal>
-          {overlayVisible && (
-            <View
-              pointerEvents="box-none"
-              style={{
-                position: 'absolute',
-                top: 0,
-                right: 0,
-                bottom: 0,
-                left: 0,
-                justifyContent: 'flex-end',
-                alignItems: 'center',
-                paddingBottom: 120,
-              }}
-            >
-              <ThemedView
+          <Portal>
+            {overlayVisible && (
+              <View
+                pointerEvents="box-none"
                 style={{
-                  justifyContent: 'space-between',
-                  flexDirection: 'row',
-                  width: '100%',
-                  borderRadius: 12,
-                  overflow: 'hidden',
-                  paddingHorizontal: 20,
-                  paddingVertical: 12,
-                  ...Platform.select({
-                    ios: {
-                      shadowColor: '#000',
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.1,
-                      shadowRadius: 6,
-                    },
-                    android: {
-                      elevation: 4,
-                    },
-                  }),
+                  position: 'absolute',
+                  top: 0,
+                  right: 0,
+                  bottom: 0,
+                  left: 0,
+                  justifyContent: 'flex-end',
+                  alignItems: 'center',
+                  paddingBottom: 120,
                 }}
               >
-                <MarqueeText
-                  containerStyle={{
-                    flex: 1,
-                    minWidth: 0,
+                <ThemedView
+                  style={{
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexDirection: 'row',
+                    width: '100%',
+                    borderRadius: 12,
+                    overflow: 'hidden',
+                    paddingHorizontal: 20,
+                    paddingVertical: 12,
+                    ...Platform.select({
+                      ios: {
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.1,
+                        shadowRadius: 6,
+                      },
+                      android: {
+                        elevation: 4,
+                      },
+                    }),
                   }}
-                  style={{ color: iconColor }}
-                  text={playlist[index]?.filename ?? 'Pemutar Musik'}
-                  speed={40}
-                  pause={800}
-                />
+                >
+                <View style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                  <Marquee spacing={20} speed={1} style={{ flex: 1, minWidth: 0 }}>
+                    <ThemedText style={{ color: iconColor }}>
+                      {playlist[index]?.filename ?? 'Pemutar Musik'}
+                    </ThemedText>
+                  </Marquee>
+                </View>
 
-                <ThemedView style={{ flexDirection: 'row', gap: 8 }}>
-                  <Pressable>
-                    <MaterialIcons
-                      name="skip-previous"
-                      size={24}
-                      color={iconColor}
-                    />
-                  </Pressable>
-                  <Pressable
-                    onPress={() => {
-                      console.log(
-                        'PemutarMusik: tombol',
-                        status.playing ? 'Jeda' : 'Putar',
-                      );
-                      if (status.playing) {
-                        player.pause();
-                      } else {
-                        player.play();
-                      }
+                  <ThemedView
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 8,
                     }}
                   >
-                    <MaterialIcons
-                      name={status.playing ? 'pause' : 'play-arrow'}
-                      accessibilityLabel={status.playing ? 'Jeda' : 'Putar'}
-                      size={24}
-                      color={iconColor}
-                    />
-                  </Pressable>
-                  <Pressable onPress={mainkanSelanjutnya}>
-                    <MaterialIcons
-                      name="skip-next"
-                      size={24}
-                      color={iconColor}
-                    />
-                  </Pressable>
+                    <Pressable>
+                      <MaterialIcons
+                        name="skip-previous"
+                        size={24}
+                        color={iconColor}
+                      />
+                    </Pressable>
+                    <Pressable
+                      onPress={() => {
+                        console.log(
+                          'PemutarMusik: tombol',
+                          status.playing ? 'Jeda' : 'Putar',
+                        );
+                        if (status.playing) {
+                          player.pause();
+                        } else {
+                          player.play();
+                        }
+                      }}
+                    >
+                      <MaterialIcons
+                        name={status.playing ? 'pause' : 'play-arrow'}
+                        accessibilityLabel={status.playing ? 'Jeda' : 'Putar'}
+                        size={24}
+                        color={iconColor}
+                      />
+                    </Pressable>
+                    <Pressable onPress={mainkanSelanjutnya}>
+                      <MaterialIcons
+                        name="skip-next"
+                        size={24}
+                        color={iconColor}
+                      />
+                    </Pressable>
+                  </ThemedView>
                 </ThemedView>
-              </ThemedView>
-            </View>
-          )}
-        </Portal>
-      </PaperProvider>
-    </ThemeProvider>
-  </GestureHandlerRootView>
+              </View>
+            )}
+          </Portal>
+        </PaperProvider>
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }
