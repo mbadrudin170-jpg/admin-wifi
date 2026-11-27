@@ -9,8 +9,9 @@ import {
 } from '@/store/player-store';
 import { formatDurasi } from '@/utils/format';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { Image } from 'expo-image';
 import { router } from 'expo-router';
+import { Image } from 'expo-image';
+import { BottomSheetModal, BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   FlatList,
@@ -19,7 +20,6 @@ import {
   useColorScheme,
   View,
 } from 'react-native';
-import Modal from 'react-native-modal';
 import {
   SafeAreaView,
   useSafeAreaInsets,
@@ -30,8 +30,8 @@ const viewabilityConfig = {
 };
 
 export default function ListMusik() {
-  const [modalVisible, setModalVisible] = useState(false);
   const [selected, setSelected] = useState<PlaylistItem | null>(null);
+  const bottomSheetRef = useRef<BottomSheetModal>(null);
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const musik = usePlayerStore((s) => s.libraryMusik);
@@ -184,7 +184,7 @@ export default function ListMusik() {
                   <Pressable
                     onPress={() => {
                       setSelected(item);
-                      setModalVisible(true);
+                      bottomSheetRef.current?.present();
                     }}
                   >
                     <MaterialIcons
@@ -199,26 +199,17 @@ export default function ListMusik() {
           />
         )}
 
-        <Modal
-          isVisible={modalVisible}
-          onBackdropPress={() => setModalVisible(false)}
-          onSwipeComplete={() => setModalVisible(false)}
-          swipeDirection="down"
-          style={{ justifyContent: 'flex-end', margin: 0 }}
-        >
-          <Pressable
-            style={styles.backdrop}
-            onPress={() => setModalVisible(false)}
+        <BottomSheetModalProvider>
+          <BottomSheetModal
+            ref={bottomSheetRef}
+            snapPoints={['25%', '50%']}
+            enablePanDownToClose
           >
-            <Pressable
-              style={
-                (styles.menu, { backgroundColor: isDark ? '#222' : '#fff' })
-              }
-            >
-              <ThemedText>tes</ThemedText>
-            </Pressable>
-          </Pressable>
-        </Modal>
+            <ThemedView style={{ padding: Spacing.two }}>
+              <ThemedText>tes {selected?.filename}</ThemedText>
+            </ThemedView>
+          </BottomSheetModal>
+        </BottomSheetModalProvider>
       </ThemedView>
     </SafeAreaView>
   );

@@ -18,6 +18,7 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { Pressable, useColorScheme, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { PaperProvider, Portal } from 'react-native-paper';
 import MyModule from '../../modules/my-module/src/MyModule';
 import { mainkanSelanjutnya } from './pemutar-musik';
@@ -95,7 +96,8 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <PaperProvider>
         <Stack>
@@ -197,5 +199,6 @@ export default function RootLayout() {
         </Portal>
       </PaperProvider>
     </ThemeProvider>
+  </GestureHandlerRootView>
   );
 }
