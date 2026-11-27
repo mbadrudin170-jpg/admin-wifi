@@ -11,7 +11,7 @@ import { formatDurasi } from '@/utils/format';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router } from 'expo-router';
 import { Image } from 'expo-image';
-import { BottomSheetModal, BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import { Modal } from 'react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   FlatList,
@@ -31,7 +31,6 @@ const viewabilityConfig = {
 
 export default function ListMusik() {
   const [selected, setSelected] = useState<PlaylistItem | null>(null);
-  const bottomSheetRef = useRef<BottomSheetModal>(null);
   const scheme = useColorScheme();
   const isDark = scheme === 'dark';
   const musik = usePlayerStore((s) => s.libraryMusik);
@@ -183,8 +182,8 @@ export default function ListMusik() {
 
                   <Pressable
                     onPress={() => {
+                      console.log('buka modal', item.filename);
                       setSelected(item);
-                      bottomSheetRef.current?.present();
                     }}
                   >
                     <MaterialIcons
@@ -199,17 +198,21 @@ export default function ListMusik() {
           />
         )}
 
-        <BottomSheetModalProvider>
-          <BottomSheetModal
-            ref={bottomSheetRef}
-            snapPoints={['25%', '50%']}
-            enablePanDownToClose
-          >
-            <ThemedView style={{ padding: Spacing.two }}>
+        <Modal
+          visible={!!selected}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setSelected(null)}
+        >
+          <Pressable style={styles.backdrop} onPress={() => setSelected(null)}>
+            <Pressable
+              onPress={() => {}}
+              style={[styles.menuBase, { backgroundColor: isDark ? '#222' : '#fff' }]}
+            >
               <ThemedText>tes {selected?.filename}</ThemedText>
-            </ThemedView>
-          </BottomSheetModal>
-        </BottomSheetModalProvider>
+            </Pressable>
+          </Pressable>
+        </Modal>
       </ThemedView>
     </SafeAreaView>
   );
@@ -278,7 +281,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'flex-end',
-    alignItems: 'center',
+  },
+  menuBase: {
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    padding: Spacing.three,
+    minHeight: 120,
   },
   menu: {
     borderRadius: 8,
