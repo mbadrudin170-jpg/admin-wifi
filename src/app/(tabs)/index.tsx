@@ -1,13 +1,13 @@
-import { useCallback, useEffect, useRef } from 'react';
-import { FlatList, Image, Pressable, StyleSheet, View } from 'react-native';
-
 import AppBar from '@/components/app-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { formatDurasi } from '@/utils/format';
 import { setPlaylist, usePlayerStore } from '@/store/player-store';
+import { formatDurasi } from '@/utils/format';
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
+import { useCallback, useEffect, useRef } from 'react';
+import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import {
   SafeAreaView,
   useSafeAreaInsets,
@@ -114,6 +114,11 @@ export default function ListMusik() {
             }
             viewabilityConfig={viewabilityConfig}
             onViewableItemsChanged={onViewableItemsChanged}
+            initialNumToRender={12}
+            maxToRenderPerBatch={10}
+            windowSize={5}
+            removeClippedSubviews
+            updateCellsBatchingPeriod={50}
             ListFooterComponent={
               memuat && musik.length > 0 ? (
                 <ThemedText type="small" style={styles.empty}>
@@ -123,36 +128,36 @@ export default function ListMusik() {
             }
             renderItem={({ item, index }) => {
               return (
-              <Pressable
-                style={styles.row}
-                onPress={() => {
-                  setPlaylist(musik, index);
-                  router.push('/pemutar-musik');
-                }}
-              >
-                <View style={styles.albumArtContainer}>
-                  {item.artwork ? (
-                    <Image
-                      source={{ uri: item.artwork }}
-                      style={styles.albumArt}
-                    />
-                  ) : (
-                    <View
-                      style={[styles.albumArt, styles.albumArtPlaceholder]}
-                    />
-                  )}
-                </View>
-                <View style={styles.textContainer}>
-                  <ThemedText type="default" style={styles.nama}>
-                    {item.filename}
-                  </ThemedText>
-                  <ThemedText type="small" style={styles.meta}>
-                    Durasi {formatDurasi((item.duration ?? 0) / 1000)}
-                  </ThemedText>
-                </View>
-              </Pressable>
-            );
-          }}
+                <Pressable
+                  style={styles.row}
+                  onPress={() => {
+                    setPlaylist(musik, index);
+                    router.push('/pemutar-musik');
+                  }}
+                >
+                  <View style={styles.albumArtContainer}>
+                    {item.artwork ? (
+                      <Image
+                        source={{ uri: item.artwork }}
+                        style={styles.albumArt}
+                      />
+                    ) : (
+                      <View
+                        style={[styles.albumArt, styles.albumArtPlaceholder]}
+                      />
+                    )}
+                  </View>
+                  <View style={styles.textContainer}>
+                    <ThemedText type="default" style={styles.nama}>
+                      {item.filename}
+                    </ThemedText>
+                    <ThemedText type="small" style={styles.meta}>
+                      Durasi {formatDurasi((item.duration ?? 0) / 1000)}
+                    </ThemedText>
+                  </View>
+                </Pressable>
+              );
+            }}
           />
         )}
       </ThemedView>
