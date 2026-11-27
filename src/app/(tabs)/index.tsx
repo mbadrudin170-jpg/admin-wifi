@@ -9,12 +9,12 @@ import {
 } from '@/store/player-store';
 import { formatDurasi } from '@/utils/format';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { router } from 'expo-router';
 import { Image } from 'expo-image';
-import { Modal } from 'react-native';
+import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   FlatList,
+  Modal,
   Pressable,
   StyleSheet,
   useColorScheme,
@@ -205,12 +205,14 @@ export default function ListMusik() {
           onRequestClose={() => setSelected(null)}
         >
           <Pressable style={styles.backdrop} onPress={() => setSelected(null)}>
-            <Pressable
-              onPress={() => {}}
-              style={[styles.menuBase, { backgroundColor: isDark ? '#222' : '#fff' }]}
+            <View
+              style={[
+                styles.menuBase,
+                { backgroundColor: isDark ? '#222' : '#fff' },
+              ]}
             >
               <ThemedText>tes {selected?.filename}</ThemedText>
-            </Pressable>
+            </View>
           </Pressable>
         </Modal>
       </ThemedView>
