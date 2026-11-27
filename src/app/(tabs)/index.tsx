@@ -2,12 +2,24 @@ import AppBar from '@/components/app-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
-import { setPlaylist, usePlayerStore } from '@/store/player-store';
+import {
+  PlaylistItem,
+  setPlaylist,
+  usePlayerStore,
+} from '@/store/player-store';
 import { formatDurasi } from '@/utils/format';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { useCallback, useEffect, useRef } from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  FlatList,
+  Modal,
+  Pressable,
+  StyleSheet,
+  useColorScheme,
+  View,
+} from 'react-native';
 import {
   SafeAreaView,
   useSafeAreaInsets,
@@ -18,15 +30,18 @@ const viewabilityConfig = {
 };
 
 export default function ListMusik() {
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selected, setSelected] = useState<PlaylistItem | null>(null);
+  const scheme = useColorScheme();
+  const isDark = scheme === 'dark';
   const musik = usePlayerStore((s) => s.libraryMusik);
   const izin = usePlayerStore((s) => s.hasPermission);
   const memuat = usePlayerStore((s) => s.isLoadingLibrary);
   const loadLibrary = usePlayerStore((s) => s.loadLibrary);
   const loadMore = usePlayerStore((s) => s.loadMoreLibrary);
   const insets = useSafeAreaInsets();
-
   const loadMoreLock = useRef(false);
-
+  const iconColor = isDark ? '#fff' : '#030000';
   const paginationRef = useRef({
     length: musik.length,
     memuat,
@@ -128,40 +143,81 @@ export default function ListMusik() {
             }
             renderItem={({ item, index }) => {
               return (
-                <Pressable
-                  style={styles.row}
-                  onPress={() => {
-                    setPlaylist(musik, index);
-                    router.push('/pemutar-musik');
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    gap: Spacing.one,
+                    alignItems: 'center',
                   }}
                 >
-                  <View style={styles.albumArtContainer}>
-                    {item.artwork ? (
-                      <Image
-                      source={{ uri: item.artwork }}
-                      style={styles.albumArt}
-                      contentFit="cover"
-                      cachePolicy="memory-disk"
+                  <Pressable
+                    style={styles.row}
+                    onPress={() => {
+                      setPlaylist(musik, index);
+                      router.push('/pemutar-musik');
+                    }}
+                  >
+                    <View style={styles.albumArtContainer}>
+                      {item.artwork ? (
+                        <Image
+                          source={{ uri: item.artwork }}
+                          style={styles.albumArt}
+                          contentFit="cover"
+                          cachePolicy="memory-disk"
+                        />
+                      ) : (
+                        <View
+                          style={[styles.albumArt, styles.albumArtPlaceholder]}
+                        />
+                      )}
+                    </View>
+                    <View style={styles.textContainer}>
+                      <ThemedText type="default" style={styles.nama}>
+                        {item.filename}
+                      </ThemedText>
+                      <ThemedText type="small" style={styles.meta}>
+                        Durasi {formatDurasi((item.duration ?? 0) / 1000)}
+                      </ThemedText>
+                    </View>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={() => {
+                      setSelected(item);
+                      setModalVisible(true);
+                    }}
+                  >
+                    <MaterialIcons
+                      name="more-vert"
+                      color={iconColor}
+                      size={24}
                     />
-                    ) : (
-                      <View
-                        style={[styles.albumArt, styles.albumArtPlaceholder]}
-                      />
-                    )}
-                  </View>
-                  <View style={styles.textContainer}>
-                    <ThemedText type="default" style={styles.nama}>
-                      {item.filename}
-                    </ThemedText>
-                    <ThemedText type="small" style={styles.meta}>
-                      Durasi {formatDurasi((item.duration ?? 0) / 1000)}
-                    </ThemedText>
-                  </View>
-                </Pressable>
+                  </Pressable>
+                </View>
               );
             }}
           />
         )}
+
+        <Modal
+          visible={modalVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setModalVisible(false)}
+        >
+          <Pressable
+            style={styles.backdrop}
+            onPress={() => setModalVisible(false)}
+          >
+            <ThemedView
+              style={
+                (styles.menu, { backgroundColor: isDark ? '#222' : '#fff' })
+              }
+            >
+              <ThemedText>tes</ThemedText>
+            </ThemedView>
+          </Pressable>
+        </Modal>
       </ThemedView>
     </SafeAreaView>
   );
@@ -191,6 +247,8 @@ const styles = StyleSheet.create({
     padding: Spacing.two,
     borderRadius: Spacing.two,
     backgroundColor: 'rgba(0,0,0,0.05)',
+    gap: Spacing.one,
+    flex: 1,
   },
   albumArtContainer: {
     width: 50,
@@ -223,5 +281,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     opacity: 0.6,
     marginTop: Spacing.three,
+  },
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  menu: {
+    borderRadius: 8,
+    padding: Spacing.two,
+    minWidth: 180,
   },
 });
