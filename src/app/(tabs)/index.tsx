@@ -14,12 +14,12 @@ import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   FlatList,
-  Modal,
   Pressable,
   StyleSheet,
   useColorScheme,
   View,
 } from 'react-native';
+import Modal from 'react-native-modal';
 import {
   SafeAreaView,
   useSafeAreaInsets,
@@ -200,10 +200,11 @@ export default function ListMusik() {
         )}
 
         <Modal
-          visible={modalVisible}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setModalVisible(false)}
+          isVisible={modalVisible}
+          onBackdropPress={() => setModalVisible(false)}
+          onSwipeComplete={() => setModalVisible(false)}
+          swipeDirection="down"
+          style={{ justifyContent: 'flex-end', margin: 0 }}
         >
           <Pressable
             style={styles.backdrop}
