@@ -117,7 +117,7 @@ export default function ListMusik() {
             initialNumToRender={12}
             maxToRenderPerBatch={10}
             windowSize={5}
-            removeClippedSubviews
+            removeClippedSubviews={false}
             updateCellsBatchingPeriod={50}
             ListFooterComponent={
               memuat && musik.length > 0 ? (
@@ -138,9 +138,11 @@ export default function ListMusik() {
                   <View style={styles.albumArtContainer}>
                     {item.artwork ? (
                       <Image
-                        source={{ uri: item.artwork }}
-                        style={styles.albumArt}
-                      />
+                      source={{ uri: item.artwork }}
+                      style={styles.albumArt}
+                      contentFit="cover"
+                      cachePolicy="memory-disk"
+                    />
                     ) : (
                       <View
                         style={[styles.albumArt, styles.albumArtPlaceholder]}
