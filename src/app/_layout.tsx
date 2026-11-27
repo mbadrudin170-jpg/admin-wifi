@@ -151,13 +151,17 @@ export default function RootLayout() {
                     }),
                   }}
                 >
-                <View style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
-                  <Marquee spacing={20} speed={1} style={{ flex: 1, minWidth: 0 }}>
-                    <ThemedText style={{ color: iconColor }}>
-                      {playlist[index]?.filename ?? 'Pemutar Musik'}
-                    </ThemedText>
-                  </Marquee>
-                </View>
+                  <View style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                    <Marquee
+                      spacing={20}
+                      speed={1}
+                      style={{ flex: 1, minWidth: 0 }}
+                    >
+                      <ThemedText style={{ color: iconColor }}>
+                        {playlist[index]?.filename ?? 'Pemutar Musik'}
+                      </ThemedText>
+                    </Marquee>
+                  </View>
 
                   <ThemedView
                     style={{
