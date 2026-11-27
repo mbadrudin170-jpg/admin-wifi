@@ -202,20 +202,20 @@ export default function ListMusik() {
         <Modal
           visible={modalVisible}
           transparent
-          animationType="fade"
+          animationType="slide"
           onRequestClose={() => setModalVisible(false)}
         >
           <Pressable
             style={styles.backdrop}
             onPress={() => setModalVisible(false)}
           >
-            <ThemedView
+            <Pressable
               style={
                 (styles.menu, { backgroundColor: isDark ? '#222' : '#fff' })
               }
             >
               <ThemedText>tes</ThemedText>
-            </ThemedView>
+            </Pressable>
           </Pressable>
         </Modal>
       </ThemedView>
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
     alignItems: 'center',
   },
   menu: {
