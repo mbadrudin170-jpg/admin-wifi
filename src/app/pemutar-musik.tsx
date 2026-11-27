@@ -16,6 +16,7 @@ import AppBar from '@/components/app-bar';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, Spacing } from '@/constants/theme';
+import { formatDurasi } from '@/utils/format';
 import { useOverlayStore } from '@/store/overlay-store';
 import {
   getIdDimuatStore,
@@ -57,13 +58,6 @@ function parseLrc(lrc: string): LirikBaris[] {
   }
   baris.sort((a, b) => a.waktu - b.waktu);
   return baris;
-}
-
-function formatWaktu(detik: number) {
-  if (!Number.isFinite(detik) || detik < 0) return '0:00';
-  const menit = Math.floor(detik / 60);
-  const sisa = Math.floor(detik % 60);
-  return `${menit}:${sisa.toString().padStart(2, '0')}`;
 }
 
 export const mainkanSelanjutnya = async () => {
@@ -458,9 +452,9 @@ export default function PemutarMusik() {
           />
           <View style={styles.waktuRow}>
             <ThemedText type="small">
-              {formatWaktu(status.currentTime)}
+              {formatDurasi(status.currentTime)}
             </ThemedText>
-            <ThemedText type="small">{formatWaktu(status.duration)}</ThemedText>
+            <ThemedText type="small">{formatDurasi(status.duration)}</ThemedText>
           </View>
         </View>
 
